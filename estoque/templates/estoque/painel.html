@@ -1,0 +1,79 @@
+{% extends "estoque/base.html" %}
+{% block conteudo %}
+
+{% if alertas %}
+<h2>Alertas de reposição</h2>
+<div class="grade">
+  {% for a in alertas %}
+  <div class="card alerta {% if a.em_andamento %}andamento{% endif %}">
+    {% if a.em_andamento %}
+      <strong>{{ a.consumivel.nome }}</strong>: pedido em andamento
+    {% else %}
+      <strong>Necessário pedir {{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }} de {{ a.consumivel.nome }}</strong>
+    {% endif %}
+    <div class="suave">
+      Estoque {{ a.consumivel.estoque_unidade }} / mínimo {{ a.consumivel.estoque_minimo }}.
+      Sem reserva na sala: {% for i in a.impressoras %}{{ i.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </div>
+    {% if not a.em_andamento %}
+    <form class="linha" method="post" action="{% url 'criar_pedido' %}">
+      {% csrf_token %}
+      <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
+      <label>Quantidade
+        <input type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></label>
+      <label>Solicitante <input name="solicitante" required></label>
+      <button>Criar pedido</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Estoque da unidade</h2>
+<div class="grade">
+  {% for c in consumiveis %}
+  <div class="card">
+    <strong>{{ c.nome }}</strong> <span class="suave">({{ c.get_tipo_display }})</span>
+    <div class="suave">Mínimo desejado: {{ c.estoque_minimo }}</div>
+    <form class="linha" method="post" action="{% url 'atualizar_consumivel' c.id %}">
+      {% csrf_token %}
+      <label>Em estoque
+        <input type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}"></label>
+      <button>Salvar</button>
+      {% if c.estoque_unidade < c.estoque_minimo %}<span class="abaixo">abaixo do mínimo</span>{% endif %}
+    </form>
+  </div>
+  {% empty %}
+  <p class="suave">Nenhum item cadastrado. Use o menu Cadastros.</p>
+  {% endfor %}
+</div>
+
+<h2>Impressoras</h2>
+<div class="grade">
+  {% for i in impressoras %}
+  <div class="card">
+    <h3>{{ i.nome }}</h3>
+    <div class="suave">{{ i.modelo.nome }} · {{ i.modelo.tipo }} · S/N {{ i.numero_serie }}</div>
+    <div class="suave">{{ i.localizacao }}</div>
+    <div class="barra" title="{{ i.nivel_toner }}%">
+      <span class="{% if i.nivel_toner <= 15 %}baixo{% elif i.nivel_toner <= 40 %}medio{% else %}ok{% endif %}"
+            style="width: {{ i.nivel_toner }}%"></span>
+    </div>
+    <div class="suave">Toner {{ i.modelo.toner.nome }}: {{ i.nivel_toner }}%</div>
+    <form class="linha" method="post" action="{% url 'atualizar_impressora' i.id %}">
+      {% csrf_token %}
+      <label>Nível %
+        <input type="number" name="nivel_toner" min="0" max="100" value="{{ i.nivel_toner }}"></label>
+      <label>Toners na sala
+        <input type="number" name="toner_na_sala" min="0" value="{{ i.toner_na_sala }}"></label>
+      <label>Resíduo na sala
+        <input type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></label>
+      <button>Salvar</button>
+    </form>
+  </div>
+  {% empty %}
+  <p class="suave">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
+  {% endfor %}
+</div>
+{% endblock %}

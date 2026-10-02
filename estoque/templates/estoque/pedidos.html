@@ -1,0 +1,48 @@
+{% extends "estoque/base.html" %}
+{% block titulo %}Pedidos · Controle de Toner{% endblock %}
+{% block conteudo %}
+<h2>Novo pedido</h2>
+<form class="linha card" method="post" action="{% url 'criar_pedido' %}">
+  {% csrf_token %}
+  <label>Item
+    <select name="consumivel">
+      {% for c in consumiveis %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+    </select></label>
+  <label>Quantidade <input type="number" name="quantidade" min="1" value="1"></label>
+  <label>Solicitante <input name="solicitante" required></label>
+  <label>Observação <input name="observacao"></label>
+  <button>Criar pedido</button>
+</form>
+
+<h2>Pedidos</h2>
+<table>
+  <tr><th>Data</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Status</th></tr>
+  {% for p in pedidos %}
+  <tr>
+    <td>{{ p.criado_em|date:"d/m/Y H:i" }}</td>
+    <td>{{ p.consumivel.nome }}</td>
+    <td>{{ p.quantidade }}</td>
+    <td>{{ p.solicitante }}</td>
+    <td>{{ p.observacao }}</td>
+    <td>
+      {% if p.status == 'recebido' %}
+        {{ p.get_status_display }}
+      {% else %}
+      <form class="linha" style="margin:0" method="post" action="{% url 'status_pedido' p.id %}">
+        {% csrf_token %}
+        <select name="status">
+          {% for valor, rotulo in status_opcoes %}
+          <option value="{{ valor }}" {% if valor == p.status %}selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+        <button>Atualizar</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6" class="suave">Nenhum pedido registrado.</td></tr>
+  {% endfor %}
+</table>
+<p class="suave">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade (e o pedido não pode mais ser alterado).</p>
+{% endblock %}
