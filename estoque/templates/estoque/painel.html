@@ -17,6 +17,34 @@
 </div>
 {% endif %}
 
+{# ===== Estoque ===== #}
+<h2 class="mb-3"><i class="bi bi-box-seam"></i> Estoque da unidade</h2>
+<div class="row g-3 mb-5">
+  {% for c in consumiveis %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="fs-5 fw-bold">{{ c.nome }}</div>
+      <div class="mb-2">{{ c.get_tipo_display }} · ideal: pelo menos {{ c.estoque_minimo }}</div>
+      {% if pode_editar %}
+      <form class="d-flex gap-2 align-items-center flex-wrap" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
+        {% csrf_token %}
+        <label class="mb-0 fw-semibold">Em estoque:</label>
+        <input class="form-control campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Quantidade em estoque">
+        <button class="btn btn-primary">Salvar</button>
+        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% endif %}
+      </form>
+      {% else %}
+      <div class="d-flex gap-2 align-items-center">
+        <span class="fs-4">Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
+        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
+      </div>
+      {% endif %}
+    </div></div>
+  </div>
+  {% empty %}
+  <p class="fs-5">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
+  {% endfor %}
+</div>
 {# ===== Alertas ===== #}
 {% if alertas %}
 <h2 class="mb-3"><i class="bi bi-cart-plus text-danger"></i> O que pedir</h2>
@@ -108,32 +136,4 @@
 <p class="fs-5">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
 {% endif %}
 
-{# ===== Estoque ===== #}
-<h2 class="mt-5 mb-3"><i class="bi bi-box-seam"></i> Estoque da unidade</h2>
-<div class="row g-3 mb-4">
-  {% for c in consumiveis %}
-  <div class="col-md-6 col-xl-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="fs-5 fw-bold">{{ c.nome }}</div>
-      <div class="mb-2">{{ c.get_tipo_display }} · ideal: pelo menos {{ c.estoque_minimo }}</div>
-      {% if pode_editar %}
-      <form class="d-flex gap-2 align-items-center flex-wrap" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
-        {% csrf_token %}
-        <label class="mb-0 fw-semibold">Em estoque:</label>
-        <input class="form-control campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Quantidade em estoque">
-        <button class="btn btn-primary">Salvar</button>
-        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% endif %}
-      </form>
-      {% else %}
-      <div class="d-flex gap-2 align-items-center">
-        <span class="fs-4">Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
-        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
-      </div>
-      {% endif %}
-    </div></div>
-  </div>
-  {% empty %}
-  <p class="fs-5">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
-  {% endfor %}
-</div>
 {% endblock %}
