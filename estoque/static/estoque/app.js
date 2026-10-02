@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var NIVEL_BAIXO = 15; // mesmo limite provisório usado no servidor (views.py)
   var filtros = { busca: '', baixos: false };
 
   // ----- Tema claro/escuro -----
@@ -66,8 +67,12 @@
   // Valor do controle deslizante de nível em tempo real
   document.addEventListener('input', function (e) {
     if (e.target.matches('[data-nivel-range]')) {
-      var saida = e.target.closest('.linha-cor').querySelector('[data-nivel-saida]');
-      if (saida) saida.textContent = e.target.value + '%';
+      var linha = e.target.closest('.linha-cor');
+      var valor = parseInt(e.target.value, 10);
+      linha.querySelector('[data-nivel-saida]').textContent = valor + '%';
+      linha.querySelector('.progress-bar').style.width = valor + '%';
+      linha.querySelector('.progress').setAttribute('aria-valuenow', valor);
+      linha.querySelector('[data-nivel-baixo]').classList.toggle('d-none', valor > NIVEL_BAIXO);
     }
   });
 

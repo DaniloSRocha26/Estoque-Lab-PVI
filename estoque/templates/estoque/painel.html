@@ -120,7 +120,7 @@
               <span><span class="ponto cor-{{ l.cor }}"></span> <strong>{{ l.get_cor_display }}</strong>
                 <span class="text-body-secondary">· {{ l.toner.nome }}</span></span>
               <span>
-                {% if l.nivel <= 15 %}<span class="badge text-bg-danger">Baixo</span>{% endif %}
+                <span class="badge text-bg-danger {% if l.nivel > 15 %}d-none{% endif %}" data-nivel-baixo>Baixo</span>
                 <strong class="nivel-texto" data-nivel-saida>{{ l.nivel }}%</strong>
               </span>
             </div>

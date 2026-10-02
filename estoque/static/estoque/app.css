@@ -14,4 +14,4 @@
 .cor-magenta { background-color: #d63384; }
 .cor-amarelo { background-color: #ffc107; }
 [data-bs-theme="dark"] .cor-preto { background-color: #adb5bd; }
-.progress-bar { transition: width .3s; }
+.progress-bar { transition: width .1s; }
