@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Consumivel, Impressora, ModeloImpressora, Pedido
+from .models import Consumivel, Impressora, ModeloImpressora, ModeloToner, NivelToner, Pedido
 
 
 @admin.register(Consumivel)
@@ -9,14 +9,37 @@ class ConsumivelAdmin(admin.ModelAdmin):
     list_filter = ('tipo',)
 
 
+class ModeloTonerInline(admin.TabularInline):
+    model = ModeloToner
+    extra = 1
+    max_num = 4
+
+
 @admin.register(ModeloImpressora)
 class ModeloImpressoraAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'tipo', 'toner', 'caixa_residuo')
+    list_display = ('nome', 'tipo', 'cores', 'caixa_residuo')
+    inlines = [ModeloTonerInline]
+
+    @admin.display(description='Cores')
+    def cores(self, obj):
+        return ', '.join(t.get_cor_display() for t in obj.toners_ordenados())
+
+
+class NivelTonerInline(admin.TabularInline):
+    model = NivelToner
+    extra = 0
+    can_delete = False
+    fields = ('cor', 'nivel', 'na_sala')
+    readonly_fields = ('cor',)
+
+    def has_add_permission(self, request, obj=None):
+        return False  # os níveis são criados automaticamente conforme as cores do modelo
 
 
 @admin.register(Impressora)
 class ImpressoraAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'modelo', 'numero_serie', 'localizacao', 'nivel_toner')
+    list_display = ('nome', 'modelo', 'numero_serie', 'localizacao')
+    inlines = [NivelTonerInline]
 
 
 @admin.register(Pedido)

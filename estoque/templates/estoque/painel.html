@@ -38,7 +38,7 @@
         {% endif %}
         <div class="text-body-secondary small mb-2">
           Estoque {{ a.consumivel.estoque_unidade }} / mínimo {{ a.consumivel.estoque_minimo }}.
-          Sem reserva na sala: {% for i in a.impressoras %}{{ i.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          Sem reserva na sala: {{ a.afetadas|join:", " }}
         </div>
         {% if not a.em_andamento %}
         <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
@@ -96,36 +96,53 @@
 <div class="row g-3">
   {% for i in impressoras %}
   <div class="col-md-6 col-xl-4">
-    <div class="card card-impressora h-100 {% if i.toner_na_sala == 0 %}sem-reserva{% endif %}"
-         data-nivel="{{ i.nivel_toner }}"
+    <div class="card card-impressora h-100 {% if i.sem_reserva_sala %}sem-reserva{% endif %}"
+         data-nivel="{{ i.nivel_minimo }}"
          data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <h3 class="h6 mb-0">{{ i.nome }}</h3>
-            <div class="text-body-secondary small">{{ i.modelo.nome }} · {{ i.modelo.tipo }}</div>
+            <div class="text-body-secondary small">{{ i.modelo.nome }} · {{ i.modelo.tipo }}
+              · {% if i.colorida %}4 cores{% else %}preto e branco{% endif %}</div>
           </div>
-          {% if i.nivel_toner <= 15 %}<span class="badge text-bg-danger">Baixo</span>
-          {% elif i.nivel_toner <= 40 %}<span class="badge text-bg-warning">Médio</span>
+          {% if i.nivel_minimo <= 15 %}<span class="badge text-bg-danger">Baixo</span>
+          {% elif i.nivel_minimo <= 40 %}<span class="badge text-bg-warning">Médio</span>
           {% else %}<span class="badge text-bg-success">OK</span>{% endif %}
         </div>
         <div class="text-body-secondary small mt-1"><i class="bi bi-geo-alt"></i> {{ i.localizacao }} · S/N {{ i.numero_serie }}</div>
 
-        <div class="progress mt-3" role="progressbar" aria-valuenow="{{ i.nivel_toner }}" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar {% if i.nivel_toner <= 15 %}bg-danger{% elif i.nivel_toner <= 40 %}bg-warning{% else %}bg-success{% endif %}"
-               style="width: {{ i.nivel_toner }}%">{{ i.nivel_toner }}%</div>
-        </div>
-        <div class="text-body-secondary small mt-1">Toner: {{ i.modelo.toner.nome }}{% if i.modelo.caixa_residuo %} · Resíduo: {{ i.modelo.caixa_residuo.nome }}{% endif %}</div>
-
         <form class="mt-3" method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
           {% csrf_token %}
-          <label class="form-label small mb-0">Nível de toner: <strong class="nivel-texto" data-nivel-saida>{{ i.nivel_toner }}%</strong></label>
-          <input class="form-range" type="range" name="nivel_toner" min="0" max="100" step="1" value="{{ i.nivel_toner }}" data-nivel-range>
+          {% for l in i.linhas %}
+          <div class="linha-cor mb-3">
+            <div class="d-flex justify-content-between align-items-center small">
+              <span><span class="ponto cor-{{ l.cor }}"></span> <strong>{{ l.get_cor_display }}</strong>
+                <span class="text-body-secondary">· {{ l.toner.nome }}</span></span>
+              <span>
+                {% if l.nivel <= 15 %}<span class="badge text-bg-danger">Baixo</span>{% endif %}
+                <strong class="nivel-texto" data-nivel-saida>{{ l.nivel }}%</strong>
+              </span>
+            </div>
+            <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
+            </div>
+            <div class="d-flex gap-2 align-items-center mt-1">
+              <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
+              <label class="small text-body-secondary text-nowrap mb-0">Na sala
+                <input class="form-control form-control-sm campo-pequeno d-inline-block ms-1" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}"></label>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-body-secondary small">Este modelo ainda não tem toners definidos (veja Cadastros).</p>
+          {% endfor %}
           <div class="d-flex gap-2 align-items-end">
-            <div><label class="form-label small mb-0">Toners na sala</label>
-              <input class="form-control form-control-sm campo-pequeno" type="number" name="toner_na_sala" min="0" value="{{ i.toner_na_sala }}"></div>
-            <div><label class="form-label small mb-0">Resíduo na sala</label>
+            {% if i.modelo.caixa_residuo %}
+            <div><label class="form-label small mb-0">Caixa de resíduo na sala</label>
               <input class="form-control form-control-sm campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></div>
+            {% else %}
+            <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
+            {% endif %}
             <button class="btn btn-primary btn-sm ms-auto">Salvar</button>
           </div>
         </form>

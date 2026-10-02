@@ -1,9 +1,11 @@
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .models import Consumivel, Impressora, Pedido
-from .services import STATUS_EM_ANDAMENTO, calcular_alertas, mudar_status_pedido
+from .services import (STATUS_EM_ANDAMENTO, calcular_alertas, impressoras_com_niveis,
+                       mudar_status_pedido)
 
 NIVEL_BAIXO = 15  # % considerado baixo (provisório, ver pendências do projeto)
 
@@ -19,18 +21,15 @@ def _inteiro(valor, minimo=0, maximo=None):
 
 
 def painel(request):
-    impressoras = Impressora.objects.select_related(
-        'modelo', 'modelo__toner', 'modelo__caixa_residuo'
-    ).order_by('localizacao', 'nome')
+    impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
-    alertas = calcular_alertas()
     return render(request, 'estoque/painel.html', {
         'impressoras': impressoras,
         'consumiveis': consumiveis,
-        'alertas': alertas,
+        'alertas': calcular_alertas(),
         'resumo': {
             'impressoras': len(impressoras),
-            'nivel_baixo': sum(1 for i in impressoras if i.nivel_toner <= NIVEL_BAIXO),
+            'nivel_baixo': sum(1 for i in impressoras if i.nivel_minimo <= NIVEL_BAIXO),
             'abaixo_minimo': sum(1 for c in consumiveis if c.estoque_unidade < c.estoque_minimo),
             'pedidos_abertos': Pedido.objects.filter(status__in=STATUS_EM_ANDAMENTO).count(),
         },
@@ -40,16 +39,25 @@ def painel(request):
 @require_POST
 def atualizar_impressora(request, pk):
     impressora = get_object_or_404(Impressora, pk=pk)
-    nivel = _inteiro(request.POST.get('nivel_toner'), 0, 100)
-    toner = _inteiro(request.POST.get('toner_na_sala'))
     residuo = _inteiro(request.POST.get('residuo_na_sala'))
-    if None in (nivel, toner, residuo):
+    novos = []
+    for linha in impressora.niveis.all():
+        nivel = _inteiro(request.POST.get(f'nivel_{linha.cor}'), 0, 100)
+        na_sala = _inteiro(request.POST.get(f'sala_{linha.cor}'))
+        if nivel is None or na_sala is None:
+            residuo = None
+            break
+        linha.nivel, linha.na_sala = nivel, na_sala
+        novos.append(linha)
+
+    if residuo is None:
         messages.error(request, 'Valores inválidos. O nível deve ficar entre 0 e 100.')
     else:
-        impressora.nivel_toner = nivel
-        impressora.toner_na_sala = toner
-        impressora.residuo_na_sala = residuo
-        impressora.save()
+        with transaction.atomic():
+            for linha in novos:
+                linha.save(update_fields=['nivel', 'na_sala'])
+            impressora.residuo_na_sala = residuo
+            impressora.save(update_fields=['residuo_na_sala'])
         messages.success(request, f'{impressora.nome} atualizada.')
     return redirect('painel')
 

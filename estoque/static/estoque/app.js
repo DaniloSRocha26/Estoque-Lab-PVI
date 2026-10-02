@@ -66,7 +66,7 @@
   // Valor do controle deslizante de nível em tempo real
   document.addEventListener('input', function (e) {
     if (e.target.matches('[data-nivel-range]')) {
-      var saida = e.target.closest('form').querySelector('[data-nivel-saida]');
+      var saida = e.target.closest('.linha-cor').querySelector('[data-nivel-saida]');
       if (saida) saida.textContent = e.target.value + '%';
     }
   });

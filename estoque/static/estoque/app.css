@@ -8,3 +8,10 @@
 .alerta-card.andamento { border-left-color: var(--bs-warning); }
 .form-range { min-width: 8rem; }
 .salvando { opacity: .6; pointer-events: none; }
+.ponto { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; vertical-align: -1px; }
+.cor-preto { background-color: #343a40; }
+.cor-ciano { background-color: #0dcaf0; }
+.cor-magenta { background-color: #d63384; }
+.cor-amarelo { background-color: #ffc107; }
+[data-bs-theme="dark"] .cor-preto { background-color: #adb5bd; }
+.progress-bar { transition: width .3s; }
