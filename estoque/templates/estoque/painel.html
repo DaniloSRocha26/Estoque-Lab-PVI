@@ -95,9 +95,15 @@
 
 {% if grupos %}
 <ul class="nav nav-pills mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" type="button" role="tab"
+            data-bs-toggle="pill" data-bs-target="#aba-todos" data-aba="todos">
+      Todos <span class="badge text-bg-secondary ms-1">{{ impressoras|length }}</span>
+    </button>
+  </li>
   {% for g in grupos %}
   <li class="nav-item" role="presentation">
-    <button class="nav-link {% if forloop.first %}active{% endif %}" type="button" role="tab"
+    <button class="nav-link" type="button" role="tab"
             data-bs-toggle="pill" data-bs-target="#aba-{{ g.modelo.id }}" data-aba="{{ g.modelo.id }}">
       {{ g.modelo.nome }} <span class="badge text-bg-secondary ms-1">{{ g.impressoras|length }}</span>
     </button>
@@ -105,64 +111,19 @@
   {% endfor %}
 </ul>
 <div class="tab-content">
+  <div class="tab-pane fade show active" id="aba-todos" role="tabpanel">
+  <div class="row g-3">
+  {% for i in impressoras %}
+  {% include 'estoque/_card_impressora.html' %}
+  {% endfor %}
+  <p class="sem-resultado text-body-secondary d-none">Nenhuma impressora encontrada com esse filtro.</p>
+  </div>
+  </div>
   {% for g in grupos %}
-  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="aba-{{ g.modelo.id }}" role="tabpanel">
+  <div class="tab-pane fade" id="aba-{{ g.modelo.id }}" role="tabpanel">
   <div class="row g-3">
   {% for i in g.impressoras %}
-  <div class="col-md-6 col-xl-4">
-    <div class="card card-impressora h-100 {% if i.sem_reserva_sala %}sem-reserva{% endif %}"
-         data-nivel="{{ i.nivel_minimo }}"
-         data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <h3 class="h6 mb-0">{{ i.nome }}</h3>
-            <div class="text-body-secondary small">{{ i.modelo.nome }} · {{ i.modelo.tipo }}
-              · {% if i.colorida %}4 cores{% else %}preto e branco{% endif %}</div>
-          </div>
-          {% if i.nivel_minimo <= 15 %}<span class="badge text-bg-danger">Baixo</span>
-          {% elif i.nivel_minimo <= 40 %}<span class="badge text-bg-warning">Médio</span>
-          {% else %}<span class="badge text-bg-success">OK</span>{% endif %}
-        </div>
-        <div class="text-body-secondary small mt-1"><i class="bi bi-geo-alt"></i> {{ i.localizacao }} · S/N {{ i.numero_serie }}</div>
-
-        <form class="mt-3" method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
-          {% csrf_token %}
-          {% for l in i.linhas %}
-          <div class="linha-cor mb-3">
-            <div class="d-flex justify-content-between align-items-center small">
-              <span><span class="ponto cor-{{ l.cor }}"></span> <strong>{{ l.get_cor_display }}</strong>
-                <span class="text-body-secondary">· {{ l.toner.nome }}</span></span>
-              <span>
-                <span class="badge text-bg-danger {% if l.nivel > 15 %}d-none{% endif %}" data-nivel-baixo>Baixo</span>
-                <strong class="nivel-texto" data-nivel-saida>{{ l.nivel }}%</strong>
-              </span>
-            </div>
-            <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
-            </div>
-            <div class="d-flex gap-2 align-items-center mt-1">
-              <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
-              <label class="small text-body-secondary text-nowrap mb-0">Na sala
-                <input class="form-control form-control-sm campo-pequeno d-inline-block ms-1" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}"></label>
-            </div>
-          </div>
-          {% empty %}
-          <p class="text-body-secondary small">Este modelo ainda não tem toners definidos (veja Cadastros).</p>
-          {% endfor %}
-          <div class="d-flex gap-2 align-items-end">
-            {% if i.modelo.caixa_residuo %}
-            <div><label class="form-label small mb-0">Caixa de resíduo na sala</label>
-              <input class="form-control form-control-sm campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></div>
-            {% else %}
-            <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
-            {% endif %}
-            <button class="btn btn-primary btn-sm ms-auto">Salvar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  {% include 'estoque/_card_impressora.html' %}
   {% endfor %}
   <p class="sem-resultado text-body-secondary d-none">Nenhuma impressora encontrada com esse filtro.</p>
   </div>

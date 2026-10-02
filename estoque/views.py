@@ -29,6 +29,7 @@ def painel(request):
     grupos = [{'modelo': m, 'impressoras': lista}
               for m, lista in sorted(por_modelo.items(), key=lambda par: par[0].nome.lower())]
     return render(request, 'estoque/painel.html', {
+        'impressoras': impressoras,
         'grupos': grupos,
         'consumiveis': consumiveis,
         'alertas': calcular_alertas(),
