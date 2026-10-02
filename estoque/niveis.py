@@ -3,3 +3,4 @@
 NIVEL_BAIXO = 25   # até 25%: baixo
 NIVEL_MEDIO = 55   # até 55%: médio; acima disso: bom
 DIAS_DESATUALIZADO = 7  # nível sem ser conferido há mais que isso aparece em destaque
+RESERVA_IDEAL = 1  # toners (por cor) e caixas de resíduo que cada sala deve ter de reserva

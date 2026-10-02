@@ -121,7 +121,7 @@
 
   function editando() {
     var conteudo = document.getElementById('conteudo');
-    if (conteudo.querySelector('form[data-sujo], form.salvando')) return true;
+    if (conteudo.querySelector('form[data-sujo], form.salvando, .dropdown-menu.show')) return true;
     var ativo = document.activeElement;
     var campoDeTexto = ativo && conteudo.contains(ativo) &&
       ativo.matches('input:not([type=checkbox]):not([type=radio]), select, textarea');

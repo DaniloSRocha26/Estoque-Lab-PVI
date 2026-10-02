@@ -37,12 +37,20 @@
             <div class="mt-2"><label class="form-label mb-0">Arraste para informar o nível:</label>
               <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}"></div>
             <div class="d-flex gap-2 align-items-center flex-wrap">
-              <label class="mb-0 fw-semibold" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}">Toners reserva na sala:</label>
+              <label class="mb-0 fw-semibold" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}">Reserva na sala (contagem):</label>
               <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
-              {# botão ligado ao formulário de troca (abaixo) pelo atributo form, pois não pode haver formulário dentro de formulário #}
-              <button type="submit" form="troca-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="btn btn-outline-success ms-auto" {% if l.na_sala == 0 %}disabled title="Sem toner reserva na sala"{% endif %}>
-                <i class="bi bi-arrow-repeat"></i> Troquei o toner
-              </button>
+              {# os botões usam o atributo form para enviar os formulários de troca (abaixo): não pode haver formulário dentro de formulário #}
+              <div class="dropdown ms-auto">
+                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-arrow-repeat"></i> Troquei o toner
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><button type="submit" form="troca-sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="dropdown-item py-2" {% if l.na_sala == 0 %}disabled{% endif %}>
+                    Usei a reserva da sala{% if l.na_sala == 0 %} (sem reserva){% endif %}</button></li>
+                  <li><button type="submit" form="troca-estoque-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="dropdown-item py-2" {% if not l.toner or l.toner.estoque_unidade < 1 %}disabled{% endif %}>
+                    Peguei do estoque{% if not l.toner or l.toner.estoque_unidade < 1 %} (sem estoque){% endif %}</button></li>
+                </ul>
+              </div>
             </div>
           </div>
           {% empty %}
@@ -56,12 +64,17 @@
           {% else %}
           <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% endif %}
+          <p class="text-body-secondary mb-2">Mudar a contagem aqui só corrige o número da sala (e fica no histórico). Para tirar do estoque, use <a href="{% url 'estoque' %}">Salas para reabastecer</a>.</p>
           <button class="btn btn-primary w-100">Salvar {{ i.nome }}</button>
         </form>
         {% for l in i.linhas %}
-        <form id="troca-{{ aba }}-{{ i.id }}-{{ l.cor }}" method="post" action="{% url 'trocar_toner' i.id l.cor %}" data-ajax
-              data-confirmar="Registrar a troca do toner {{ l.get_cor_display }} da {{ i.nome }}? O nível vai para 100% e 1 toner sai da reserva da sala.">
-          {% csrf_token %}
+        <form id="troca-sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" method="post" action="{% url 'trocar_toner' i.id l.cor %}" data-ajax
+              data-confirmar="Registrar a troca do toner {{ l.get_cor_display }} da {{ i.nome }} usando a reserva da sala? O nível vai para 100% e 1 toner sai da reserva da sala.">
+          {% csrf_token %}<input type="hidden" name="origem" value="sala">
+        </form>
+        <form id="troca-estoque-{{ aba }}-{{ i.id }}-{{ l.cor }}" method="post" action="{% url 'trocar_toner' i.id l.cor %}" data-ajax
+              data-confirmar="Registrar a troca do toner {{ l.get_cor_display }} da {{ i.nome }} usando o estoque da unidade? O nível vai para 100% e 1 toner sai do estoque.">
+          {% csrf_token %}<input type="hidden" name="origem" value="estoque">
         </form>
         {% endfor %}
         {% else %}

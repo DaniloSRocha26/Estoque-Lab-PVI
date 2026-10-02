@@ -6,10 +6,11 @@ from django.views.decorators.http import require_POST
 
 from .acesso import somente_admin
 from .models import (CORES, ORDEM_CORES, Consumivel, Impressora, ModeloToner, NivelToner, Pedido,
-                     Troca)
+                     AjusteReserva, Reposicao, Troca)
 from .niveis import NIVEL_BAIXO
-from .services import (STATUS_EM_ANDAMENTO, SemReserva, calcular_alertas, impressoras_com_niveis,
-                       mudar_status_pedido, trocar_toner)
+from .services import (STATUS_EM_ANDAMENTO, SemEstoque, SemReserva, calcular_alertas,
+                       impressoras_com_niveis, mudar_status_pedido, repor_na_sala, repor_tudo,
+                       salas_para_reabastecer, trocar_toner)
 
 
 
@@ -32,15 +33,18 @@ def _contexto_base():
         c.cor = cor_do_item.get(c.id)  # só toners ligados a um modelo têm cor
         c.cor_nome = dict(CORES).get(c.cor)
     alertas = calcular_alertas(impressoras)
+    reabastecer = salas_para_reabastecer(impressoras)
     return {
         'impressoras': impressoras,
         'consumiveis': consumiveis,
         'alertas': alertas,
+        'reabastecer': reabastecer,
         'resumo': {
             'impressoras': len(impressoras),
             'nivel_baixo': sum(1 for i in impressoras if i.nivel_minimo <= NIVEL_BAIXO),
             'abaixo_minimo': sum(1 for c in consumiveis if c.estoque_unidade < c.estoque_minimo),
             'pedidos_abertos': Pedido.objects.filter(status__in=STATUS_EM_ANDAMENTO).count(),
+            'reabastecer': len(reabastecer),
         },
     }
 
@@ -65,24 +69,33 @@ def pagina_impressoras(request):
 def atualizar_impressora(request, pk):
     impressora = get_object_or_404(Impressora, pk=pk)
     residuo = _inteiro(request.POST.get('residuo_na_sala'))
-    novos = []
+    novos, ajustes = [], []
     for linha in impressora.niveis.all():
         nivel = _inteiro(request.POST.get(f'nivel_{linha.cor}'), 0, 100)
         na_sala = _inteiro(request.POST.get(f'sala_{linha.cor}'))
         if nivel is None or na_sala is None:
             residuo = None
             break
+        if na_sala != linha.na_sala:
+            ajustes.append(('Toner ' + linha.get_cor_display(), linha.cor, linha.na_sala, na_sala))
         linha.nivel, linha.na_sala = nivel, na_sala
         novos.append(linha)
 
     if residuo is None:
         messages.error(request, 'Valores inválidos. O nível deve ficar entre 0 e 100.')
     else:
+        if residuo != impressora.residuo_na_sala:
+            ajustes.append(('Caixa de resíduo', '', impressora.residuo_na_sala, residuo))
         with transaction.atomic():
             for linha in novos:
                 linha.save(update_fields=['nivel', 'na_sala'])
             impressora.residuo_na_sala = residuo
             impressora.save(update_fields=['residuo_na_sala'])
+            for descricao, cor, anterior, novo in ajustes:  # contagem corrigida à mão fica registrada
+                AjusteReserva.objects.create(
+                    impressora=impressora, impressora_nome=impressora.nome, descricao=descricao,
+                    cor=cor, anterior=anterior, novo=novo, usuario=request.user,
+                    usuario_nome=request.user.get_full_name() or request.user.get_username())
         messages.success(request, f'{impressora.nome} atualizada.')
     return redirect('impressoras')
 
@@ -149,27 +162,72 @@ def trocar_toner_view(request, pk, cor):
         raise Http404
     get_object_or_404(NivelToner, impressora=impressora, cor=cor)
     nome_cor = dict(CORES)[cor]
+    origem = 'estoque' if request.POST.get('origem') == 'estoque' else 'sala'
     try:
-        trocar_toner(impressora.id, cor, request.user)
+        trocar_toner(impressora.id, cor, request.user, origem)
     except SemReserva:
         messages.error(request, f'Não há toner {nome_cor.lower()} de reserva na sala da {impressora.nome}. '
-                                'Informe a quantidade na sala e tente de novo.')
+                                'Se pegou do estoque, use "Peguei do estoque".')
+    except SemEstoque as erro:
+        messages.error(request, f'Não há {erro.item.nome} no estoque da unidade.')
     else:
-        messages.success(request, f'Troca registrada: {impressora.nome}, {nome_cor}. '
+        de_onde = 'da reserva da sala' if origem == 'sala' else 'do estoque da unidade'
+        messages.success(request, f'Troca registrada: {impressora.nome}, {nome_cor} (toner {de_onde}). '
                                   'O nível voltou para 100%.')
     return redirect('impressoras')
 
 
+@somente_admin
+@require_POST
+def repor_na_sala_view(request, pk, chave):
+    impressora = get_object_or_404(Impressora, pk=pk)
+    if chave != 'residuo' and chave not in ORDEM_CORES:
+        raise Http404
+    try:
+        reposicao = repor_na_sala(impressora.id, chave, request.user)
+    except NivelToner.DoesNotExist:
+        raise Http404
+    except SemEstoque as erro:
+        messages.error(request, f'Sem estoque de {erro.item.nome}. Faça um pedido para poder repor.')
+    except ValueError as erro:
+        messages.error(request, str(erro))
+    else:
+        if reposicao is None:
+            messages.success(request, f'{impressora.nome} já tem a reserva ideal.')
+        else:
+            messages.success(request, f'Reposto: {reposicao.quantidade}x {reposicao.item_nome} na {impressora.nome}.')
+    return redirect('estoque')
+
+
+@somente_admin
+@require_POST
+def repor_tudo_view(request):
+    feitas, sem_estoque = repor_tudo(request.user)
+    if feitas:
+        messages.success(request, f'{len(feitas)} reposição(ões) feita(s) na sala.')
+    if sem_estoque:
+        itens = sorted({linha['item'].nome for linha in sem_estoque})
+        messages.error(request, 'Sem estoque para repor: ' + ', '.join(itens) + '.')
+    if not feitas and not sem_estoque:
+        messages.success(request, 'Todas as salas já têm a reserva ideal.')
+    return redirect('estoque')
+
+
 def pagina_historico(request):
     trocas = Troca.objects.select_related('impressora')
+    reposicoes = Reposicao.objects.select_related('impressora')
+    ajustes = AjusteReserva.objects.select_related('impressora')
     escolhida = request.GET.get('impressora', '')
     if escolhida.isdigit():
         trocas = trocas.filter(impressora_id=int(escolhida))
+        reposicoes = reposicoes.filter(impressora_id=int(escolhida))
+        ajustes = ajustes.filter(impressora_id=int(escolhida))
     else:
         escolhida = ''
     return render(request, 'estoque/historico.html', {
         'trocas': trocas[:300],
+        'reposicoes': reposicoes[:300],
+        'ajustes': ajustes[:300],
         'impressoras': Impressora.objects.order_by('nome'),
         'escolhida': escolhida,
-        'cores': dict(CORES),
     })

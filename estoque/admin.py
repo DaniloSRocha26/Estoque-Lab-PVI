@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Consumivel, Impressora, ModeloImpressora, ModeloToner, NivelToner, Pedido, Troca
+from .models import (AjusteReserva, Consumivel, Impressora, ModeloImpressora, ModeloToner, NivelToner,
+                     Pedido, Reposicao, Troca)
 
 
 @admin.register(Consumivel)
@@ -52,3 +53,13 @@ class PedidoAdmin(admin.ModelAdmin):
 class TrocaAdmin(admin.ModelAdmin):
     list_display = ('registrado_em', 'impressora_nome', 'cor', 'toner_nome', 'nivel_anterior', 'usuario_nome')
     list_filter = ('cor',)
+
+
+@admin.register(Reposicao)
+class ReposicaoAdmin(admin.ModelAdmin):
+    list_display = ('registrado_em', 'impressora_nome', 'item_nome', 'quantidade', 'usuario_nome')
+
+
+@admin.register(AjusteReserva)
+class AjusteReservaAdmin(admin.ModelAdmin):
+    list_display = ('registrado_em', 'impressora_nome', 'descricao', 'anterior', 'novo', 'usuario_nome')

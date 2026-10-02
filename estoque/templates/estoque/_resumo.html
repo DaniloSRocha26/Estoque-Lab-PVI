@@ -1,15 +1,16 @@
-{% if resumo.nivel_baixo or alertas %}
+{% if resumo.nivel_baixo or alertas or reabastecer %}
 <div class="resumo-geral atencao mb-4" role="status">
   <i class="bi bi-exclamation-triangle-fill"></i> Atenção
   <ul>
     {% if resumo.nivel_baixo %}<li>{{ resumo.nivel_baixo }} impressora{{ resumo.nivel_baixo|pluralize }} com toner baixo.</li>{% endif %}
+    {% if reabastecer %}<li>{{ reabastecer|length }} {% if reabastecer|length == 1 %}item sem reserva na sala{% else %}itens sem reserva nas salas{% endif %} (veja <a href="{% url 'estoque' %}">Salas para reabastecer</a>).</li>{% endif %}
     {% if alertas %}<li>{{ alertas|length }} {% if alertas|length == 1 %}item{% else %}itens{% endif %} para pedir.</li>{% endif %}
     {% if resumo.pedidos_abertos %}<li>{{ resumo.pedidos_abertos }} pedido{{ resumo.pedidos_abertos|pluralize }} em andamento.</li>{% endif %}
   </ul>
 </div>
 {% else %}
 <div class="resumo-geral ok mb-4" role="status">
-  <i class="bi bi-check-circle-fill"></i> Tudo certo: nenhum toner baixo e nada para pedir.
+  <i class="bi bi-check-circle-fill"></i> Tudo certo: nenhum toner baixo, nenhuma sala sem reserva e nada para pedir.
 </div>
 {% endif %}
 

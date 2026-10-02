@@ -3,7 +3,7 @@
 {% block auto %}1{% endblock %}
 {% block conteudo %}
 <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h2 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de trocas de toner</h2>
+  <h2 class="mb-0"><i class="bi bi-clock-history"></i> Histórico</h2>
   <form class="d-flex gap-2 align-items-center" method="get">
     <label class="mb-0 fw-semibold" for="filtro-impressora">Impressora:</label>
     <select id="filtro-impressora" class="form-select" name="impressora" style="width:15rem">
@@ -14,26 +14,78 @@
   </form>
 </div>
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead><tr><th>Quando</th><th>Impressora</th><th>Cor</th><th>Toner</th><th>Nível antes</th><th>Quem</th></tr></thead>
-      <tbody>
-      {% for t in trocas %}
-      <tr>
-        <td class="text-nowrap">{{ t.registrado_em|date:"d/m/Y H:i" }}</td>
-        <td>{{ t.impressora_nome }}</td>
-        <td class="text-nowrap"><span class="ponto cor-{{ t.cor }}"></span> {{ t.get_cor_display }}</td>
-        <td>{{ t.toner_nome|default:"—" }}</td>
-        <td>{{ t.nivel_anterior }}%</td>
-        <td>{{ t.usuario_nome|default:"—" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="text-center text-body-secondary py-4">Nenhuma troca registrada ainda. Use o botão "Troquei o toner" na página Impressoras.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+<ul class="nav nav-pills mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="pill" data-bs-target="#h-trocas" data-aba="h-trocas">Trocas de toner <span class="badge text-bg-secondary">{{ trocas|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-reposicoes" data-aba="h-reposicoes">Reposições na sala <span class="badge text-bg-secondary">{{ reposicoes|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-ajustes" data-aba="h-ajustes">Ajustes de contagem <span class="badge text-bg-secondary">{{ ajustes|length }}</span></button></li>
+</ul>
+
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="h-trocas">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Quando</th><th>Impressora</th><th>Cor</th><th>Toner</th><th>Nível antes</th><th>Saiu de</th><th>Quem</th></tr></thead>
+        <tbody>
+        {% for t in trocas %}
+        <tr>
+          <td class="text-nowrap">{{ t.registrado_em|date:"d/m/Y H:i" }}</td>
+          <td>{{ t.impressora_nome }}</td>
+          <td class="text-nowrap"><span class="ponto cor-{{ t.cor }}"></span> {{ t.get_cor_display }}</td>
+          <td>{{ t.toner_nome|default:"—" }}</td>
+          <td>{{ t.nivel_anterior }}%</td>
+          <td>{{ t.get_origem_display }}</td>
+          <td>{{ t.usuario_nome|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-body-secondary py-4">Nenhuma troca registrada ainda. Use o botão "Troquei o toner" na página Impressoras.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="h-reposicoes">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Quando</th><th>Impressora</th><th>Item</th><th>Qtd</th><th>Quem</th></tr></thead>
+        <tbody>
+        {% for r in reposicoes %}
+        <tr>
+          <td class="text-nowrap">{{ r.registrado_em|date:"d/m/Y H:i" }}</td>
+          <td>{{ r.impressora_nome }}</td>
+          <td>{% if r.cor %}<span class="ponto cor-{{ r.cor }}"></span> {% endif %}{{ r.item_nome }}</td>
+          <td>{{ r.quantidade }}</td>
+          <td>{{ r.usuario_nome|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-body-secondary py-4">Nenhuma reposição registrada ainda. Elas aparecem quando você usa "Repor" em Salas para reabastecer.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="h-ajustes">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Quando</th><th>Impressora</th><th>Item</th><th>Contagem</th><th>Quem</th></tr></thead>
+        <tbody>
+        {% for a in ajustes %}
+        <tr>
+          <td class="text-nowrap">{{ a.registrado_em|date:"d/m/Y H:i" }}</td>
+          <td>{{ a.impressora_nome }}</td>
+          <td>{% if a.cor %}<span class="ponto cor-{{ a.cor }}"></span> {% endif %}{{ a.descricao }}</td>
+          <td>de <strong>{{ a.anterior }}</strong> para <strong>{{ a.novo }}</strong></td>
+          <td>{{ a.usuario_nome|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-body-secondary py-4">Nenhum ajuste registrado. Aparecem quando a contagem da reserva na sala é alterada à mão.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
   </div>
 </div>
-<p class="text-body-secondary mt-2">Mostrando as 300 trocas mais recentes.</p>
+<p class="text-body-secondary mt-2">Mostrando os 300 registros mais recentes de cada aba.</p>
 {% endblock %}

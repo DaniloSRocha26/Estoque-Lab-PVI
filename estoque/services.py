@@ -5,8 +5,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import (ORDEM_CORES, Consumivel, Impressora, ModeloImpressora, ModeloToner,
-                     NivelToner, Pedido, Troca)
-from .niveis import DIAS_DESATUALIZADO
+                     NivelToner, Pedido, Reposicao, Troca)
+from .niveis import DIAS_DESATUALIZADO, RESERVA_IDEAL
 
 STATUS_EM_ANDAMENTO = ('pendente', 'enviado')
 
@@ -100,25 +100,119 @@ class SemReserva(Exception):
     """Não há toner reserva na sala para fazer a troca."""
 
 
+class SemEstoque(Exception):
+    """O estoque da unidade não tem a quantidade necessária."""
+
+    def __init__(self, item):
+        super().__init__(item.nome)
+        self.item = item
+
+
+def _nome_do_usuario(usuario):
+    if not usuario.is_authenticated:
+        return ''
+    return usuario.get_full_name() or usuario.get_username()
+
+
+def _toner_do_modelo(impressora, cor):
+    ligacao = (ModeloToner.objects.filter(modelo=impressora.modelo, cor=cor).first())
+    return Consumivel.objects.select_for_update().get(pk=ligacao.consumivel_id) if ligacao else None
+
+
 @transaction.atomic
-def trocar_toner(impressora_id, cor, usuario):
-    """Troca de toner em um clique: tira 1 da reserva da sala, volta o nível a 100% e registra."""
+def trocar_toner(impressora_id, cor, usuario, origem='sala'):
+    """Troca de toner: o nível volta a 100% e o toner novo sai da reserva da sala ou do estoque."""
     nivel = (NivelToner.objects.select_for_update()
              .select_related('impressora__modelo').get(impressora_id=impressora_id, cor=cor))
-    if nivel.na_sala < 1:
-        raise SemReserva
     impressora = nivel.impressora
-    ligacao = (ModeloToner.objects.select_related('consumivel')
-               .filter(modelo=impressora.modelo, cor=cor).first())
-    toner = ligacao.consumivel if ligacao else None
-    nome_usuario = (usuario.get_full_name() or usuario.get_username()) if usuario.is_authenticated else ''
+    toner = _toner_do_modelo(impressora, cor)
+
+    if origem == 'estoque':
+        if toner is None or toner.estoque_unidade < 1:
+            raise SemEstoque(toner or Consumivel(nome=f'toner {cor}'))
+        toner.estoque_unidade -= 1
+        toner.save(update_fields=['estoque_unidade'])
+    else:
+        origem = 'sala'
+        if nivel.na_sala < 1:
+            raise SemReserva
+        nivel.na_sala -= 1
 
     troca = Troca.objects.create(
         impressora=impressora, impressora_nome=impressora.nome, cor=cor,
-        toner=toner, toner_nome=toner.nome if toner else '',
-        nivel_anterior=nivel.nivel,
-        usuario=usuario if usuario.is_authenticated else None, usuario_nome=nome_usuario)
-    nivel.na_sala -= 1
+        toner=toner, toner_nome=toner.nome if toner else '', nivel_anterior=nivel.nivel,
+        origem=origem, usuario=usuario if usuario.is_authenticated else None,
+        usuario_nome=_nome_do_usuario(usuario))
     nivel.nivel = 100
     nivel.save(update_fields=['na_sala', 'nivel'])
     return troca
+
+
+def salas_para_reabastecer(impressoras=None):
+    """Toners (por cor) e caixas de resíduo cuja reserva na sala está abaixo da ideal."""
+    linhas = []
+    for imp in (impressoras if impressoras is not None else impressoras_com_niveis()):
+        for l in imp.linhas:
+            if l.toner and l.na_sala < RESERVA_IDEAL:
+                linhas.append({'impressora': imp, 'tipo': 'toner', 'cor': l.cor,
+                               'cor_nome': l.get_cor_display(), 'item': l.toner,
+                               'falta': RESERVA_IDEAL - l.na_sala, 'chave': l.cor})
+        residuo = imp.modelo.caixa_residuo
+        if residuo and imp.residuo_na_sala < RESERVA_IDEAL:
+            linhas.append({'impressora': imp, 'tipo': 'residuo', 'cor': '', 'cor_nome': '',
+                           'item': residuo, 'falta': RESERVA_IDEAL - imp.residuo_na_sala,
+                           'chave': 'residuo'})
+    for linha in linhas:
+        linha['cobre'] = linha['item'].estoque_unidade >= linha['falta']
+    return linhas
+
+
+@transaction.atomic
+def repor_na_sala(impressora_id, chave, usuario):
+    """Passa do estoque da unidade para a reserva da sala o que falta para chegar à reserva ideal.
+
+    `chave` é a cor do toner ou 'residuo'. Levanta SemEstoque se o estoque não cobre."""
+    impressora = Impressora.objects.select_for_update().select_related(
+        'modelo', 'modelo__caixa_residuo').get(pk=impressora_id)
+    if chave == 'residuo':
+        item, atual, cor = impressora.modelo.caixa_residuo, impressora.residuo_na_sala, ''
+        nivel = None
+    else:
+        nivel = NivelToner.objects.select_for_update().get(impressora=impressora, cor=chave)
+        item, atual, cor = _toner_do_modelo(impressora, chave), nivel.na_sala, chave
+    if item is None:
+        raise ValueError('Este item não está ligado ao modelo.')
+    quantidade = RESERVA_IDEAL - atual
+    if quantidade < 1:
+        return None  # já tem a reserva ideal
+    item = Consumivel.objects.select_for_update().get(pk=item.pk)
+    if item.estoque_unidade < quantidade:
+        raise SemEstoque(item)
+
+    item.estoque_unidade -= quantidade
+    item.save(update_fields=['estoque_unidade'])
+    if nivel is None:
+        impressora.residuo_na_sala += quantidade
+        impressora.save(update_fields=['residuo_na_sala'])
+    else:
+        nivel.na_sala += quantidade
+        nivel.save(update_fields=['na_sala'])
+    return Reposicao.objects.create(
+        impressora=impressora, impressora_nome=impressora.nome, cor=cor, item=item,
+        item_nome=item.nome, quantidade=quantidade,
+        usuario=usuario if usuario.is_authenticated else None,
+        usuario_nome=_nome_do_usuario(usuario))
+
+
+def repor_tudo(usuario):
+    """Repõe tudo o que o estoque alcança; o que não alcança fica na lista. Retorna (feitas, sem_estoque)."""
+    feitas, sem_estoque = [], []
+    for linha in salas_para_reabastecer():
+        try:
+            reposicao = repor_na_sala(linha['impressora'].id, linha['chave'], usuario)
+        except SemEstoque:
+            sem_estoque.append(linha)
+        else:
+            if reposicao:
+                feitas.append(reposicao)
+    return feitas, sem_estoque

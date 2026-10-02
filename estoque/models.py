@@ -134,6 +134,8 @@ class Troca(models.Model):
     toner = models.ForeignKey(Consumivel, on_delete=models.SET_NULL, null=True, related_name='+')
     toner_nome = models.CharField(max_length=100, blank=True)
     nivel_anterior = models.PositiveIntegerField()
+    ORIGENS = [('sala', 'Reserva da sala'), ('estoque', 'Estoque da unidade')]
+    origem = models.CharField(max_length=7, choices=ORIGENS, default='sala')
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, blank=True, related_name='+')
     usuario_nome = models.CharField(max_length=150, blank=True)
@@ -146,6 +148,52 @@ class Troca(models.Model):
 
     def __str__(self):
         return f'{self.impressora_nome} · {self.get_cor_display()} · {self.registrado_em:%d/%m/%Y}'
+
+
+class Reposicao(models.Model):
+    """Histórico: toner ou caixa de resíduo que saiu do estoque da unidade para a reserva da sala."""
+    impressora = models.ForeignKey(Impressora, on_delete=models.SET_NULL, null=True,
+                                   related_name='reposicoes')
+    impressora_nome = models.CharField(max_length=100)
+    cor = models.CharField(max_length=10, choices=CORES, blank=True)  # vazio para caixa de resíduo
+    item = models.ForeignKey(Consumivel, on_delete=models.SET_NULL, null=True, related_name='+')
+    item_nome = models.CharField(max_length=100)
+    quantidade = models.PositiveIntegerField()
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='+')
+    usuario_nome = models.CharField(max_length=150, blank=True)
+    registrado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-registrado_em', '-id']
+        verbose_name = 'reposição na sala'
+        verbose_name_plural = 'reposições na sala'
+
+    def __str__(self):
+        return f'{self.quantidade}x {self.item_nome} → {self.impressora_nome}'
+
+
+class AjusteReserva(models.Model):
+    """Histórico: a contagem da reserva na sala foi corrigida à mão (sem mexer no estoque)."""
+    impressora = models.ForeignKey(Impressora, on_delete=models.SET_NULL, null=True,
+                                   related_name='ajustes')
+    impressora_nome = models.CharField(max_length=100)
+    descricao = models.CharField(max_length=100)  # ex.: "Toner Ciano" ou "Caixa de resíduo"
+    cor = models.CharField(max_length=10, choices=CORES, blank=True)
+    anterior = models.PositiveIntegerField()
+    novo = models.PositiveIntegerField()
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='+')
+    usuario_nome = models.CharField(max_length=150, blank=True)
+    registrado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-registrado_em', '-id']
+        verbose_name = 'ajuste de contagem'
+        verbose_name_plural = 'ajustes de contagem'
+
+    def __str__(self):
+        return f'{self.impressora_nome} · {self.descricao}: {self.anterior} → {self.novo}'
 
 
 class Pedido(models.Model):
