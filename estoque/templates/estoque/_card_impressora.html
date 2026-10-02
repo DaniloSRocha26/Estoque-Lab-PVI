@@ -3,75 +3,75 @@
          data-nivel="{{ i.nivel_minimo }}"
          data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex justify-content-between align-items-start gap-2">
           <div>
-            <h3 class="h6 mb-0">{{ i.nome }}</h3>
-            <div class="text-body-secondary small">{{ i.modelo.nome }} · {{ i.modelo.tipo }}
-              · {% if i.colorida %}4 cores{% else %}preto e branco{% endif %}</div>
+            <h3 class="mb-0">{{ i.nome }}</h3>
+            <div class="mt-1"><i class="bi bi-geo-alt-fill"></i> {{ i.localizacao }}</div>
           </div>
-          {% if i.nivel_minimo <= 15 %}<span class="badge text-bg-danger">Baixo</span>
+          {% if i.nivel_minimo <= 15 %}<span class="badge text-bg-danger">Toner baixo</span>
           {% elif i.nivel_minimo <= 40 %}<span class="badge text-bg-warning">Médio</span>
-          {% else %}<span class="badge text-bg-success">OK</span>{% endif %}
+          {% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
         </div>
-        <div class="text-body-secondary small mt-1"><i class="bi bi-geo-alt"></i> {{ i.localizacao }} · S/N {{ i.numero_serie }}</div>
 
         {% if pode_editar %}
         <form class="mt-3" method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
           {% csrf_token %}
           {% for l in i.linhas %}
-          <div class="linha-cor mb-3">
-            <div class="d-flex justify-content-between align-items-center small">
-              <span><span class="ponto cor-{{ l.cor }}"></span> <strong>{{ l.get_cor_display }}</strong>
-                <span class="text-body-secondary">· {{ l.toner.nome }}</span></span>
+          <div class="linha-cor mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="nome-cor"><span class="ponto cor-{{ l.cor }}"></span> {{ l.get_cor_display }}</span>
               <span>
-                <span class="badge text-bg-danger {% if l.nivel > 15 %}d-none{% endif %}" data-nivel-baixo>Baixo</span>
+                <span class="badge {% if l.nivel <= 15 %}text-bg-danger{% elif l.nivel <= 40 %}text-bg-warning{% else %}text-bg-success{% endif %}" data-nivel-estado>{% if l.nivel <= 15 %}Baixo{% elif l.nivel <= 40 %}Médio{% else %}Bom{% endif %}</span>
                 <strong class="nivel-texto" data-nivel-saida>{{ l.nivel }}%</strong>
               </span>
             </div>
             <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
-            <div class="d-flex gap-2 align-items-center mt-1">
-              <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
-              <label class="small text-body-secondary text-nowrap mb-0">Na sala
-                <input class="form-control form-control-sm campo-pequeno d-inline-block ms-1" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}"></label>
+            <div class="mt-2"><label class="form-label mb-0">Arraste para informar o nível:</label>
+              <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}"></div>
+            <div class="d-flex gap-2 align-items-center">
+              <label class="mb-0 fw-semibold" for="sala-{{ i.id }}-{{ l.cor }}">Toners reserva na sala:</label>
+              <input id="sala-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
             </div>
           </div>
           {% empty %}
-          <p class="text-body-secondary small">Este modelo ainda não tem toners definidos (veja Cadastros).</p>
+          <p>Este modelo ainda não tem toners definidos (veja Cadastros).</p>
           {% endfor %}
-          <div class="d-flex gap-2 align-items-end">
-            {% if i.modelo.caixa_residuo %}
-            <div><label class="form-label small mb-0">Caixa de resíduo na sala</label>
-              <input class="form-control form-control-sm campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></div>
-            {% else %}
-            <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
-            {% endif %}
-            <button class="btn btn-primary btn-sm ms-auto">Salvar</button>
+          {% if i.modelo.caixa_residuo %}
+          <div class="d-flex gap-2 align-items-center mb-3">
+            <label class="mb-0 fw-semibold" for="residuo-{{ i.id }}">Caixas de resíduo na sala:</label>
+            <input id="residuo-{{ i.id }}" class="form-control campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}">
           </div>
+          {% else %}
+          <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
+          {% endif %}
+          <button class="btn btn-primary w-100">Salvar {{ i.nome }}</button>
         </form>
         {% else %}
         <div class="mt-3">
           {% for l in i.linhas %}
           <div class="linha-cor mb-3">
-            <div class="d-flex justify-content-between align-items-center small">
-              <span><span class="ponto cor-{{ l.cor }}"></span> <strong>{{ l.get_cor_display }}</strong>
-                <span class="text-body-secondary">· {{ l.toner.nome }}</span></span>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="nome-cor"><span class="ponto cor-{{ l.cor }}"></span> {{ l.get_cor_display }}</span>
               <span>
-                {% if l.nivel <= 15 %}<span class="badge text-bg-danger">Baixo</span>{% endif %}
+                <span class="badge {% if l.nivel <= 15 %}text-bg-danger{% elif l.nivel <= 40 %}text-bg-warning{% else %}text-bg-success{% endif %}">{% if l.nivel <= 15 %}Baixo{% elif l.nivel <= 40 %}Médio{% else %}Bom{% endif %}</span>
                 <strong class="nivel-texto">{{ l.nivel }}%</strong>
               </span>
             </div>
             <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
-            <div class="small text-body-secondary mt-1">Na sala: <strong>{{ l.na_sala }}</strong></div>
+            <div class="mt-1">
+              {% if l.na_sala == 0 %}<strong class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Sem toner reserva na sala</strong>
+              {% else %}Toner reserva na sala: <strong>{{ l.na_sala }}</strong>{% endif %}
+            </div>
           </div>
           {% empty %}
-          <p class="text-body-secondary small">Este modelo ainda não tem toners definidos.</p>
+          <p>Este modelo ainda não tem toners definidos.</p>
           {% endfor %}
           {% if i.modelo.caixa_residuo %}
-          <div class="small text-body-secondary">Caixa de resíduo na sala: <strong>{{ i.residuo_na_sala }}</strong></div>
+          <div>Caixas de resíduo na sala: <strong>{{ i.residuo_na_sala }}</strong></div>
           {% endif %}
         </div>
         {% endif %}

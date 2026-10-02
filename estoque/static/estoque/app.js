@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  var NIVEL_BAIXO = 15; // mesmo limite provisório usado no servidor (views.py)
+  var NIVEL_BAIXO = 15; // mesmos limites provisórios usados no servidor (views.py e templates)
+  var NIVEL_MEDIO = 40;
   var filtros = { busca: '', baixos: false, aba: null };
 
   // ----- Tema claro/escuro -----
@@ -22,7 +23,7 @@
       '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
     el.querySelector('.toast-body').textContent = texto;
     document.getElementById('toasts').appendChild(el);
-    var t = new bootstrap.Toast(el, { delay: 3500 });
+    var t = new bootstrap.Toast(el, { delay: 6000 });
     el.addEventListener('hidden.bs.toast', function () { el.remove(); });
     t.show();
   }
@@ -94,7 +95,10 @@
       linha.querySelector('[data-nivel-saida]').textContent = valor + '%';
       linha.querySelector('.progress-bar').style.width = valor + '%';
       linha.querySelector('.progress').setAttribute('aria-valuenow', valor);
-      linha.querySelector('[data-nivel-baixo]').classList.toggle('d-none', valor > NIVEL_BAIXO);
+      var estado = linha.querySelector('[data-nivel-estado]');
+      var nivel = valor <= NIVEL_BAIXO ? ['Baixo', 'danger'] : valor <= NIVEL_MEDIO ? ['Médio', 'warning'] : ['Bom', 'success'];
+      estado.textContent = nivel[0];
+      estado.className = 'badge text-bg-' + nivel[1];
     }
   });
 

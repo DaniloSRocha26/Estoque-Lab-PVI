@@ -8,7 +8,7 @@
     (function () {
       var salvo = null;
       try { salvo = localStorage.getItem('tema'); } catch (e) {}
-      var tema = salvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var tema = salvo || 'light'; // claro por padrão (mais legível); o botão do topo troca
       document.documentElement.setAttribute('data-bs-theme', tema);
     })();
   </script>

@@ -1,17 +1,63 @@
-.kpi .valor { font-size: 1.9rem; font-weight: 600; line-height: 1; }
-.kpi .icone { font-size: 1.6rem; opacity: .85; }
-.card-impressora .progress { height: 18px; }
-.card-impressora .nivel-texto { font-variant-numeric: tabular-nums; }
+/* ---------- Legibilidade: letras grandes, alto contraste, alvos de toque grandes ---------- */
+html { font-size: 112.5%; }               /* 18px base (o padrão é 16px) */
+body { line-height: 1.55; }
+.small, small { font-size: 1rem; }        /* nada de texto miúdo */
+.text-body-secondary { color: var(--bs-body-color) !important; opacity: .78; }
+h2, .h5 { font-size: 1.45rem !important; font-weight: 700; }
+.h6 { font-size: 1.15rem !important; }
+
+.navbar .nav-link { font-size: 1.15rem; padding: .7rem 1rem; font-weight: 600; }
+.navbar .nav-link.active { text-decoration: underline; text-underline-offset: .35rem; text-decoration-thickness: 3px; }
+.navbar-brand { font-size: 1.25rem; }
+
+.btn, .btn-sm, .form-control, .form-control-sm, .form-select, .form-select-sm {
+  font-size: 1.05rem; min-height: 2.9rem; padding: .5rem .9rem;
+}
+.btn { font-weight: 600; }
+.form-control, .form-select { border-width: 2px; }
+.campo-pequeno { width: 7rem; }
+:focus-visible { outline: 3px solid var(--bs-warning); outline-offset: 2px; }
+
+.badge { font-size: .95rem; padding: .45em .7em; font-weight: 700; }
+.nav-pills .nav-link { font-size: 1.15rem; padding: .7rem 1.2rem; font-weight: 600; border: 2px solid var(--bs-border-color); margin-right: .4rem; margin-bottom: .4rem; }
+.nav-pills .nav-link.active { border-color: var(--bs-primary); }
+.card { border-width: 2px; }
+
+/* ---------- Aviso geral do painel ---------- */
+.resumo-geral { border-radius: .75rem; padding: 1.1rem 1.4rem; font-size: 1.3rem; font-weight: 600; }
+.resumo-geral .bi { font-size: 2rem; vertical-align: -4px; margin-right: .5rem; }
+.resumo-geral.ok { background: #d1f0dc; color: #0b3d1f; border: 3px solid #198754; }
+.resumo-geral.atencao { background: #fff1c2; color: #4a3500; border: 3px solid #e0a800; }
+[data-bs-theme="dark"] .resumo-geral.ok { background: #123524; color: #d1f0dc; }
+[data-bs-theme="dark"] .resumo-geral.atencao { background: #4a3a05; color: #fff1c2; }
+.resumo-geral ul { margin: .4rem 0 0; font-weight: 500; font-size: 1.15rem; padding-left: 1.4rem; }
+
+/* ---------- Impressoras ---------- */
+.card-impressora .progress { height: 30px; border-radius: 8px; }
+.card-impressora .nivel-texto { font-variant-numeric: tabular-nums; font-size: 1.25rem; }
 .card-impressora.sem-reserva { border-color: var(--bs-warning); }
-.campo-pequeno { width: 6.2rem; }
-.alerta-card { border-left: 4px solid var(--bs-danger); }
+.card-impressora h3 { font-size: 1.35rem; font-weight: 700; }
+.linha-cor .nome-cor { font-size: 1.2rem; font-weight: 700; }
+.alerta-card { border-left: 8px solid var(--bs-danger); }
 .alerta-card.andamento { border-left-color: var(--bs-warning); }
-.form-range { min-width: 8rem; }
+.alerta-card .titulo { font-size: 1.3rem; font-weight: 700; }
 .salvando { opacity: .6; pointer-events: none; }
-.ponto { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; vertical-align: -1px; }
+
+/* Controle deslizante com "pegador" grande */
+.form-range { min-width: 8rem; height: 2.4rem; }
+.form-range::-webkit-slider-runnable-track { height: .9rem; border-radius: .5rem; }
+.form-range::-webkit-slider-thumb { width: 2.2rem; height: 2.2rem; margin-top: -.65rem; }
+.form-range::-moz-range-track { height: .9rem; border-radius: .5rem; }
+.form-range::-moz-range-thumb { width: 2.2rem; height: 2.2rem; }
+
+/* ---------- Cores de toner ---------- */
+.ponto { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 50%; vertical-align: -2px; border: 2px solid rgba(0,0,0,.35); }
 .cor-preto { background-color: #343a40; }
 .cor-ciano { background-color: #0dcaf0; }
 .cor-magenta { background-color: #d63384; }
 .cor-amarelo { background-color: #ffc107; }
 [data-bs-theme="dark"] .cor-preto { background-color: #adb5bd; }
 .progress-bar { transition: width .1s; }
+
+.table > :not(caption) > * > * { padding: .8rem .9rem; }
+.toast { font-size: 1.15rem; }
