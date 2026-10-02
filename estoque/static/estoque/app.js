@@ -112,6 +112,11 @@
       headers: { 'X-Requested-With': 'fetch' },
       credentials: 'same-origin'
     }).then(function (resp) {
+      if (resp.redirected && resp.url.indexOf('/entrar/') !== -1) {
+        window.location.href = resp.url; // sessão expirou
+        throw new Error('Sessão expirada.');
+      }
+      if (resp.status === 403) throw new Error('Sem permissão: seu perfil é somente consulta.');
       if (!resp.ok) throw new Error('Falha ao salvar (' + resp.status + ').');
       return resp.text();
     }).then(function (html) {

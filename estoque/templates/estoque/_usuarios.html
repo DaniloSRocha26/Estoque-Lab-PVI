@@ -1,0 +1,42 @@
+  <div class="tab-pane fade" id="cad-usuarios">
+    <div class="card card-body mb-3">
+      <h2 class="h6">Novo usuário</h2>
+      <p class="text-body-secondary small"><strong>Admin</strong> edita tudo. <strong>Visualizador</strong> só consulta (painel e pedidos).</p>
+      <form class="row g-2 align-items-end" method="post" action="{% url 'usuario_criar' %}" data-ajax autocomplete="off">
+        {% csrf_token %}
+        <div class="col-md"><label class="form-label small mb-0">Usuário (login)</label><input class="form-control form-control-sm" name="username" required></div>
+        <div class="col-md"><label class="form-label small mb-0">Nome</label><input class="form-control form-control-sm" name="nome"></div>
+        <div class="col-md"><label class="form-label small mb-0">Senha</label><input class="form-control form-control-sm" type="password" name="senha" required autocomplete="new-password"></div>
+        <div class="col-md-2"><label class="form-label small mb-0">Perfil</label>
+          <select class="form-select form-select-sm" name="perfil"><option value="visualizador">Visualizador</option><option value="admin">Admin</option></select></div>
+        <div class="col-md-auto"><button class="btn btn-primary btn-sm">Criar</button></div>
+      </form>
+    </div>
+
+    <div class="card card-body">
+      <h2 class="h6">Usuários cadastrados</h2>
+      {% for u in usuarios %}
+      <div class="d-flex gap-2 align-items-end border-top py-2">
+        <form class="row g-2 align-items-end flex-grow-1" method="post" action="{% url 'usuario_editar' u.id %}" data-ajax autocomplete="off">
+          {% csrf_token %}
+          <div class="col-md-2"><div class="small fw-semibold text-truncate">{{ u.username }}{% if u.e_voce %} <span class="badge text-bg-primary">você</span>{% endif %}</div></div>
+          <div class="col-md"><input class="form-control form-control-sm" name="nome" value="{{ u.first_name }}" placeholder="Nome" aria-label="Nome"></div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" name="perfil" aria-label="Perfil" {% if u.is_superuser %}title="Superusuário é sempre admin"{% endif %}>
+              <option value="visualizador" {% if u.perfil == 'visualizador' %}selected{% endif %}>Visualizador</option>
+              <option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Admin</option>
+            </select></div>
+          <div class="col-md-2"><input class="form-control form-control-sm" type="password" name="nova_senha" placeholder="Nova senha" autocomplete="new-password" aria-label="Nova senha"></div>
+          <div class="col-md-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="ativo" id="ativo-{{ u.id }}" {% if u.is_active %}checked{% endif %}><label class="form-check-label small" for="ativo-{{ u.id }}">Ativo</label></div></div>
+          <div class="col-md-auto"><button class="btn btn-outline-primary btn-sm">Salvar</button></div>
+        </form>
+        {% if not u.e_voce %}
+        <form method="post" action="{% url 'usuario_excluir' u.id %}" data-ajax data-confirmar="Excluir o usuário {{ u.username }}?">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm" title="Excluir"><i class="bi bi-trash"></i></button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>

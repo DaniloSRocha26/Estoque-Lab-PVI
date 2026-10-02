@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import cadastros, views
+from . import cadastros, usuarios, views
 
 urlpatterns = [
     path('', views.painel, name='painel'),
@@ -20,4 +20,7 @@ urlpatterns = [
     path('cadastros/itens/criar/', cadastros.consumivel_criar, name='consumivel_criar'),
     path('cadastros/itens/<int:pk>/editar/', cadastros.consumivel_editar, name='consumivel_editar'),
     path('cadastros/itens/<int:pk>/excluir/', cadastros.consumivel_excluir, name='consumivel_excluir'),
+    path('cadastros/usuarios/criar/', usuarios.usuario_criar, name='usuario_criar'),
+    path('cadastros/usuarios/<int:pk>/editar/', usuarios.usuario_editar, name='usuario_editar'),
+    path('cadastros/usuarios/<int:pk>/excluir/', usuarios.usuario_excluir, name='usuario_excluir'),
 ]

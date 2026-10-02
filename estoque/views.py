@@ -1,8 +1,10 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from .acesso import somente_admin
 from .models import Consumivel, Impressora, Pedido
 from .services import (STATUS_EM_ANDAMENTO, calcular_alertas, impressoras_com_niveis,
                        mudar_status_pedido)
@@ -20,6 +22,7 @@ def _inteiro(valor, minimo=0, maximo=None):
     return numero
 
 
+@login_required
 def painel(request):
     impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
@@ -42,6 +45,7 @@ def painel(request):
     })
 
 
+@somente_admin
 @require_POST
 def atualizar_impressora(request, pk):
     impressora = get_object_or_404(Impressora, pk=pk)
@@ -68,6 +72,7 @@ def atualizar_impressora(request, pk):
     return redirect('painel')
 
 
+@somente_admin
 @require_POST
 def atualizar_consumivel(request, pk):
     consumivel = get_object_or_404(Consumivel, pk=pk)
@@ -81,6 +86,7 @@ def atualizar_consumivel(request, pk):
     return redirect('painel')
 
 
+@login_required
 def pedidos(request):
     return render(request, 'estoque/pedidos.html', {
         'pedidos': Pedido.objects.select_related('consumivel').order_by('-criado_em'),
@@ -89,6 +95,7 @@ def pedidos(request):
     })
 
 
+@somente_admin
 @require_POST
 def criar_pedido(request):
     consumivel = get_object_or_404(Consumivel, pk=request.POST.get('consumivel'))
@@ -108,6 +115,7 @@ def criar_pedido(request):
     return redirect(voltar if voltar in ('painel', 'pedidos') else 'pedidos')
 
 
+@somente_admin
 @require_POST
 def status_pedido(request, pk):
     novo = request.POST.get('status')

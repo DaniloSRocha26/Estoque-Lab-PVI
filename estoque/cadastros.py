@@ -3,10 +3,12 @@ from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from .acesso import somente_admin
 from .forms import (ConsumivelEditarForm, ConsumivelNovoForm, ImpressoraForm, ModeloNomeForm,
                     ModeloNovoForm)
 from .models import Consumivel, Impressora, ModeloImpressora
 from .services import criar_modelo
+from .usuarios import listar_usuarios
 
 
 def _erros(request, form):
@@ -32,22 +34,26 @@ def _excluir(request, objeto, sucesso, em_uso):
         messages.error(request, em_uso)
 
 
+@somente_admin
 def cadastros(request):
     return render(request, 'estoque/cadastros.html', {
         'impressoras': Impressora.objects.select_related('modelo').order_by('modelo__nome', 'nome'),
         'modelos': ModeloImpressora.objects.select_related('caixa_residuo')
                    .prefetch_related('toners__consumivel', 'impressora_set').order_by('nome'),
         'consumiveis': Consumivel.objects.order_by('tipo', 'nome'),
+        'usuarios': listar_usuarios(request.user),
     })
 
 
 # ---- Impressoras ----
+@somente_admin
 @require_POST
 def impressora_criar(request):
     _salvar(request, ImpressoraForm(request.POST), 'Impressora cadastrada.')
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def impressora_editar(request, pk):
     obj = get_object_or_404(Impressora, pk=pk)
@@ -55,6 +61,7 @@ def impressora_editar(request, pk):
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def impressora_excluir(request, pk):
     obj = get_object_or_404(Impressora, pk=pk)
@@ -63,6 +70,7 @@ def impressora_excluir(request, pk):
 
 
 # ---- Modelos ----
+@somente_admin
 @require_POST
 def modelo_criar(request):
     form = ModeloNovoForm(request.POST)
@@ -75,6 +83,7 @@ def modelo_criar(request):
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def modelo_renomear(request, pk):
     obj = get_object_or_404(ModeloImpressora, pk=pk)
@@ -82,6 +91,7 @@ def modelo_renomear(request, pk):
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def modelo_excluir(request, pk):
     obj = get_object_or_404(ModeloImpressora, pk=pk)
@@ -91,12 +101,14 @@ def modelo_excluir(request, pk):
 
 
 # ---- Itens de estoque ----
+@somente_admin
 @require_POST
 def consumivel_criar(request):
     _salvar(request, ConsumivelNovoForm(request.POST), 'Item criado.')
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def consumivel_editar(request, pk):
     obj = get_object_or_404(Consumivel, pk=pk)
@@ -104,6 +116,7 @@ def consumivel_editar(request, pk):
     return redirect('cadastros')
 
 
+@somente_admin
 @require_POST
 def consumivel_excluir(request, pk):
     obj = get_object_or_404(Consumivel, pk=pk)

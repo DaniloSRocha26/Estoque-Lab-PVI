@@ -6,6 +6,7 @@
   <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="pill" data-bs-target="#cad-impressoras" data-aba="cad-impressoras">Impressoras <span class="badge text-bg-secondary">{{ impressoras|length }}</span></button></li>
   <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#cad-modelos" data-aba="cad-modelos">Modelos <span class="badge text-bg-secondary">{{ modelos|length }}</span></button></li>
   <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#cad-itens" data-aba="cad-itens">Itens de estoque <span class="badge text-bg-secondary">{{ consumiveis|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#cad-usuarios" data-aba="cad-usuarios">Usuários <span class="badge text-bg-secondary">{{ usuarios|length }}</span></button></li>
 </ul>
 
 <div class="tab-content">
@@ -143,6 +144,9 @@
       {% endfor %}
     </div>
   </div>
+
+  {# ================= USUARIOS ================= #}
+  {% include 'estoque/_usuarios.html' %}
 </div>
 
 <p class="text-body-secondary small mt-4">Precisa de algo mais avançado (ex.: trocar o toner usado por uma cor de um modelo)? Use o <a href="/admin/">painel avançado</a>.</p>

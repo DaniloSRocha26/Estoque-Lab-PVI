@@ -40,7 +40,7 @@
           Estoque {{ a.consumivel.estoque_unidade }} / mínimo {{ a.consumivel.estoque_minimo }}.
           Sem reserva na sala: {{ a.afetadas|join:", " }}
         </div>
-        {% if not a.em_andamento %}
+        {% if pode_editar and not a.em_andamento %}
         <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
           {% csrf_token %}
           <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
@@ -48,7 +48,7 @@
           <div class="col-auto"><label class="form-label small mb-0">Quantidade</label>
             <input class="form-control form-control-sm campo-pequeno" type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></div>
           <div class="col"><label class="form-label small mb-0">Solicitante</label>
-            <input class="form-control form-control-sm" name="solicitante" required></div>
+            <input class="form-control form-control-sm" name="solicitante" value="{{ request.user.get_full_name|default:request.user.username }}" required></div>
           <div class="col-auto"><button class="btn btn-danger btn-sm">Criar pedido</button></div>
         </form>
         {% endif %}
@@ -69,16 +69,23 @@
         <span class="badge text-bg-secondary align-self-start">{{ c.get_tipo_display }}</span>
       </div>
       <div class="text-body-secondary small mb-2">Mínimo desejado: {{ c.estoque_minimo }}</div>
+      {% if pode_editar %}
       <form class="d-flex gap-2 align-items-center" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
         {% csrf_token %}
         <input class="form-control form-control-sm campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Estoque">
         <button class="btn btn-primary btn-sm">Salvar</button>
         {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">abaixo do mínimo</span>{% endif %}
       </form>
+      {% else %}
+      <div class="d-flex gap-2 align-items-center">
+        <span>Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
+        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">abaixo do mínimo</span>{% endif %}
+      </div>
+      {% endif %}
     </div></div>
   </div>
   {% empty %}
-  <p class="text-body-secondary">Nenhum item cadastrado. Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.</p>
+  <p class="text-body-secondary">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
   {% endfor %}
 </div>
 
@@ -131,6 +138,6 @@
   {% endfor %}
 </div>
 {% else %}
-<p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.</p>
+<p class="text-body-secondary">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
 {% endif %}
 {% endblock %}

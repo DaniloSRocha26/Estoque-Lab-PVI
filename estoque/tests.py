@@ -1,7 +1,23 @@
-from django.test import TestCase
+from django.contrib.auth.models import Group, User
+from django.test import TestCase as DjangoTestCase
 
 from .models import Consumivel, Impressora, ModeloImpressora, ModeloToner, Pedido
 from .services import calcular_alertas, mudar_status_pedido
+
+
+class TestCase(DjangoTestCase):
+    """Os testes de funcionalidade rodam logados como admin."""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = _usuario('admin_teste', 'admin')
+        self.client.force_login(self.admin)
+
+
+def _usuario(nome, perfil, **extra):
+    user = User.objects.create_user(nome, password='SenhaForte#2026', **extra)
+    user.groups.add(Group.objects.get(name=perfil))
+    return user
 
 
 def _toner(nome, estoque=0, minimo=3):
@@ -11,6 +27,7 @@ def _toner(nome, estoque=0, minimo=3):
 
 class AlertaETests(TestCase):
     def setUp(self):
+        super().setUp()
         self.toner = _toner('Toner X')
         modelo = ModeloImpressora.objects.create(nome='M1', tipo='laser mono')
         ModeloToner.objects.create(modelo=modelo, cor='preto', consumivel=self.toner)
@@ -54,6 +71,7 @@ class AlertaETests(TestCase):
 
 class CoresTests(TestCase):
     def setUp(self):
+        super().setUp()
         self.itens = {c: _toner(f'Konica {c}', estoque=5, minimo=2)
                       for c in ('preto', 'ciano', 'magenta', 'amarelo')}
         self.modelo = ModeloImpressora.objects.create(nome='Konica', tipo='laser colorida')
@@ -183,3 +201,96 @@ class CadastrosTests(TestCase):
         imp = Impressora.objects.create(nome='X', modelo=modelo, numero_serie='S9', localizacao='L')
         self.client.post(f'/cadastros/impressoras/{imp.id}/excluir/')
         self.assertFalse(Impressora.objects.filter(pk=imp.pk).exists())
+
+
+class AcessoTests(DjangoTestCase):
+    def setUp(self):
+        self.toner = _toner('Toner X')
+        self.visualizador = _usuario('ana', 'visualizador')
+        self.admin = _usuario('chefe', 'admin')
+
+    def test_anonimo_vai_para_o_login(self):
+        for url in ('/', '/pedidos/', '/cadastros/'):
+            r = self.client.get(url)
+            self.assertEqual(r.status_code, 302)
+            self.assertIn('/entrar/', r['Location'])
+
+    def test_anonimo_nao_altera_nada(self):
+        r = self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 99})
+        self.assertEqual(r.status_code, 302)
+        self.toner.refresh_from_db()
+        self.assertEqual(self.toner.estoque_unidade, 0)
+
+    def test_visualizador_consulta_mas_nao_ve_controles(self):
+        self.client.force_login(self.visualizador)
+        for url in ('/', '/pedidos/'):
+            r = self.client.get(url)
+            self.assertEqual(r.status_code, 200)
+            self.assertNotContains(r, 'data-ajax')
+        self.assertNotContains(self.client.get('/'), 'href="/cadastros/"')
+
+    def test_visualizador_e_bloqueado_no_servidor(self):
+        self.client.force_login(self.visualizador)
+        self.assertEqual(self.client.get('/cadastros/').status_code, 403)
+        r = self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 99})
+        self.assertEqual(r.status_code, 403)
+        r = self.client.post('/pedidos/criar/', {'consumivel': self.toner.id, 'quantidade': 1,
+                                                  'solicitante': 'x'})
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(Pedido.objects.count(), 0)
+        r = self.client.post('/cadastros/modelos/criar/', {'nome': 'X', 'tipo': 'mono',
+                                                           'estoque_minimo': 1})
+        self.assertEqual(r.status_code, 403)
+        self.toner.refresh_from_db()
+        self.assertEqual(self.toner.estoque_unidade, 0)
+
+    def test_admin_ve_controles_e_altera(self):
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get('/pedidos/'), 'data-ajax')
+        self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 7})
+        self.toner.refresh_from_db()
+        self.assertEqual(self.toner.estoque_unidade, 7)
+
+    def test_login_e_logout(self):
+        r = self.client.post('/entrar/', {'username': 'ana', 'password': 'SenhaForte#2026'})
+        self.assertRedirects(r, '/')
+        self.client.post('/sair/')
+        self.assertEqual(self.client.get('/').status_code, 302)
+
+    def test_senha_errada_nao_entra(self):
+        r = self.client.post('/entrar/', {'username': 'ana', 'password': 'errada'})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Usuário ou senha incorretos')
+
+
+class UsuariosTests(TestCase):
+    def test_admin_cria_usuario_visualizador(self):
+        self.client.post('/cadastros/usuarios/criar/', {
+            'username': 'joao', 'nome': 'João', 'senha': 'SenhaForte#2026', 'perfil': 'visualizador'})
+        joao = User.objects.get(username='joao')
+        self.assertEqual(list(joao.groups.values_list('name', flat=True)), ['visualizador'])
+        self.assertTrue(joao.check_password('SenhaForte#2026'))
+
+    def test_senha_fraca_e_recusada(self):
+        self.client.post('/cadastros/usuarios/criar/', {
+            'username': 'joao', 'senha': '123', 'perfil': 'visualizador'})
+        self.assertFalse(User.objects.filter(username='joao').exists())
+
+    def test_nao_remove_o_ultimo_admin(self):
+        self.client.post(f'/cadastros/usuarios/{self.admin.id}/editar/', {
+            'perfil': 'visualizador', 'ativo': 'on'})
+        self.assertTrue(User.objects.get(pk=self.admin.pk).groups.filter(name='admin').exists())
+        self.client.post(f'/cadastros/usuarios/{self.admin.id}/excluir/')
+        self.assertTrue(User.objects.filter(pk=self.admin.pk).exists())
+
+    def test_promover_e_trocar_senha(self):
+        ana = _usuario('ana', 'visualizador')
+        self.client.post(f'/cadastros/usuarios/{ana.id}/editar/', {
+            'perfil': 'admin', 'ativo': 'on', 'nova_senha': 'OutraSenha#2026'})
+        ana.refresh_from_db()
+        self.assertTrue(ana.groups.filter(name='admin').exists())
+        self.assertFalse(ana.groups.filter(name='visualizador').exists())
+        self.assertTrue(ana.check_password('OutraSenha#2026'))
+
+    def test_pagina_de_cadastros_mostra_usuarios(self):
+        self.assertContains(self.client.get('/cadastros/'), 'admin_teste')
