@@ -93,6 +93,11 @@ class SalasParaReabastecerTests(TestCase):
         self.assertContains(r, 'href="/#salas-reabastecer"')
         self.assertContains(self.client.get('/'), 'id="salas-reabastecer"')
 
+    def test_aviso_da_contagem_aparece_so_para_quem_edita(self):
+        self.assertContains(self.client.get('/impressoras/'), 'Mudar a contagem só corrige o número da sala')
+        self.client.logout()
+        self.assertNotContains(self.client.get('/impressoras/'), 'Mudar a contagem')
+
     def test_sem_aviso_de_atualizacao_no_rodape(self):
         self.assertNotContains(self.client.get('/'), 'se atualiza sozinha')
         self.assertContains(self.client.get('/'), 'data-auto="1"')  # mas continua atualizando

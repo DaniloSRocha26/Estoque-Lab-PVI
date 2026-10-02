@@ -5,25 +5,23 @@
          data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start gap-2">
-          <div>
-            <h3 class="mb-0">{{ i.nome }}</h3>
-            <div class="mt-1"><i class="bi bi-geo-alt-fill"></i> {{ i.localizacao }}</div>
-          </div>
+          <h3 class="mb-0">{{ i.nome }}</h3>
           {% if i.nivel_minimo <= NIVEL_BAIXO %}<span class="badge text-bg-danger">Toner baixo</span>
           {% elif i.nivel_minimo <= NIVEL_MEDIO %}<span class="badge text-bg-warning">Médio</span>
           {% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
         </div>
-        {% if i.atualizado_em_nivel %}
-        <div class="mt-1 {% if i.desatualizada %}text-danger fw-semibold{% endif %}" title="{{ i.atualizado_em_nivel|date:'d/m/Y H:i' }}">
-          <i class="bi bi-clock-history"></i> Atualizado {{ i.atualizado_em_nivel|naturaltime }}{% if i.desatualizada %} · confira os níveis{% endif %}
+        <div class="dica mb-3">
+          <i class="bi bi-geo-alt-fill"></i> {{ i.localizacao }}
+          {% if i.atualizado_em_nivel %}
+          · <span class="{% if i.desatualizada %}text-danger fw-semibold{% endif %}" title="{{ i.atualizado_em_nivel|date:'d/m/Y H:i' }}"><i class="bi bi-clock-history"></i> {{ i.atualizado_em_nivel|naturaltime }}{% if i.desatualizada %} · confira os níveis{% endif %}</span>
+          {% endif %}
         </div>
-        {% endif %}
 
         {% if pode_editar %}
-        <form class="mt-3" method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
+        <form method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
           {% csrf_token %}
           {% for l in i.linhas %}
-          <div class="linha-cor mb-4">
+          <div class="linha-cor mb-3">
             <div class="d-flex justify-content-between align-items-center">
               <span class="nome-cor"><span class="ponto cor-{{ l.cor }}"></span> {{ l.get_cor_display }}</span>
               <span>
@@ -34,15 +32,14 @@
             <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
-            <div class="mt-2">
-              <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}"></div>
-            <div class="d-flex gap-2 align-items-center flex-wrap">
-              <label class="mb-0 fw-semibold" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva na sala:</label>
+            <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
+            <div class="d-flex gap-2 align-items-center">
+              <label class="mb-0" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva:</label>
               <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
               {# os botões usam o atributo form para enviar os formulários de troca (abaixo): não pode haver formulário dentro de formulário #}
               <div class="dropdown ms-auto">
-                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="bi bi-arrow-repeat"></i> Troquei o toner
+                <button class="btn btn-outline-success btn-compacto dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-arrow-repeat"></i> Troquei
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                   <li><button type="submit" form="troca-sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="dropdown-item py-2" {% if l.na_sala == 0 %}disabled{% endif %}>
@@ -58,13 +55,14 @@
           {% endfor %}
           {% if i.modelo.caixa_residuo %}
           <div class="d-flex gap-2 align-items-center mb-3">
-            <label class="mb-0 fw-semibold" for="residuo-{{ aba }}-{{ i.id }}">Caixas de resíduo na sala:</label>
+            <label class="mb-0" for="residuo-{{ aba }}-{{ i.id }}">Caixa de resíduo:</label>
             <input id="residuo-{{ aba }}-{{ i.id }}" class="form-control campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}">
           </div>
           {% else %}
           <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% endif %}
-          <button class="btn btn-primary w-100">Salvar {{ i.nome }}</button>
+          <div class="dica mb-2">Mudar a contagem só corrige o número da sala. Para tirar do estoque, use <a href="{% url 'estoque' %}#salas-reabastecer">Salas para reabastecer</a>.</div>
+          <button class="btn btn-primary w-100">Salvar</button>
         </form>
         {% for l in i.linhas %}
         <form id="troca-sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" method="post" action="{% url 'trocar_toner' i.id l.cor %}" data-ajax
@@ -77,7 +75,7 @@
         </form>
         {% endfor %}
         {% else %}
-        <div class="mt-3">
+        <div>
           {% for l in i.linhas %}
           <div class="linha-cor mb-3">
             <div class="d-flex justify-content-between align-items-center">
@@ -91,8 +89,8 @@
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
             <div class="mt-1">
-              {% if l.na_sala == 0 %}<strong class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Sem toner reserva na sala</strong>
-              {% else %}Toner reserva na sala: <strong>{{ l.na_sala }}</strong>{% endif %}
+              {% if l.na_sala == 0 %}<strong class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Sem reserva na sala</strong>
+              {% else %}Reserva na sala: <strong>{{ l.na_sala }}</strong>{% endif %}
             </div>
           </div>
           {% empty %}

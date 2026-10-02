@@ -33,7 +33,7 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 .resumo-geral ul { margin: .3rem 0 0; font-weight: 500; font-size: 1rem; padding-left: 1.3rem; }
 
 /* ---------- Impressoras ---------- */
-.card-impressora .progress { height: 24px; border-radius: 6px; }
+.card-impressora .progress { height: 18px; border-radius: 6px; }
 .card-impressora .nivel-texto { font-variant-numeric: tabular-nums; font-size: 1.1rem; }
 .card-impressora.sem-reserva { border-color: var(--bs-warning); }
 .card-impressora h3 { font-size: 1.2rem; font-weight: 700; }
@@ -44,11 +44,11 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 .salvando { opacity: .6; pointer-events: none; }
 
 /* Controle deslizante com "pegador" grande */
-.form-range { min-width: 8rem; height: 2rem; }
+.form-range { min-width: 8rem; height: 1.6rem; display: block; width: 100%; margin: .15rem 0 .35rem; }
 .form-range::-webkit-slider-runnable-track { height: .75rem; border-radius: .5rem; }
-.form-range::-webkit-slider-thumb { width: 1.7rem; height: 1.7rem; margin-top: -.5rem; }
+.form-range::-webkit-slider-thumb { width: 1.4rem; height: 1.4rem; margin-top: -.35rem; }
 .form-range::-moz-range-track { height: .75rem; border-radius: .5rem; }
-.form-range::-moz-range-thumb { width: 1.7rem; height: 1.7rem; }
+.form-range::-moz-range-thumb { width: 1.4rem; height: 1.4rem; }
 
 /* ---------- Cores de toner ---------- */
 .ponto { display: inline-block; width: 1rem; height: 1rem; border-radius: 50%; vertical-align: -2px; border: 2px solid rgba(0,0,0,.35); }
@@ -65,3 +65,9 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 /* o menu fixo no topo não pode cobrir a seção quando o link leva até ela */
 [id] { scroll-margin-top: 5rem; }
 html { scroll-behavior: smooth; }
+
+/* ---------- Card de impressora mais enxuto ---------- */
+.dica { font-size: .9rem; color: var(--bs-secondary-color); }
+.card-impressora .campo-pequeno { width: 4.5rem; min-height: 2.2rem; padding: .2rem .5rem; }
+.card-impressora .btn-compacto { min-height: 2.2rem; padding: .2rem .7rem; }
+.card-impressora .btn-primary { min-height: 2.4rem; }
