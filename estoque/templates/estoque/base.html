@@ -19,11 +19,12 @@
 <body class="bg-body-tertiary">
   <nav class="navbar navbar-expand bg-body border-bottom sticky-top">
     <div class="container">
-      <a class="navbar-brand fw-semibold" href="{% url 'painel' %}">
+      <a class="navbar-brand fw-semibold" href="{% url 'estoque' %}">
         <i class="bi bi-printer-fill text-primary"></i> Controle de Toner
       </a>
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'painel' %}active{% endif %}" href="{% url 'painel' %}">Painel</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'estoque' %}active{% endif %}" href="{% url 'estoque' %}">Estoque</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'impressoras' %}active{% endif %}" href="{% url 'impressoras' %}">Impressoras</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'pedidos' %}active{% endif %}" href="{% url 'pedidos' %}">Pedidos</a></li>
         {% if pode_editar %}
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'cadastros' %}active{% endif %}" href="{% url 'cadastros' %}">Cadastros</a></li>

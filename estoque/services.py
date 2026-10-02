@@ -26,10 +26,10 @@ def impressoras_com_niveis():
     return impressoras
 
 
-def calcular_alertas():
+def calcular_alertas(impressoras=None):
     """Itens com estoque abaixo do mínimo e ao menos uma impressora sem reserva na sala."""
     sem_reserva = defaultdict(list)  # consumivel_id -> nomes das impressoras (e cor) sem reserva
-    for imp in impressoras_com_niveis():
+    for imp in (impressoras if impressoras is not None else impressoras_com_niveis()):
         for linha in imp.linhas:
             if linha.toner and linha.na_sala == 0:
                 rotulo = f'{imp.nome} ({linha.get_cor_display()})' if imp.colorida else imp.nome

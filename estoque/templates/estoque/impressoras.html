@@ -1,0 +1,59 @@
+{% extends "estoque/base.html" %}
+{% block titulo %}Impressoras · Controle de Toner{% endblock %}
+{% block conteudo %}
+
+{% include 'estoque/_resumo.html' %}
+
+{# ===== Impressoras ===== #}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-printer"></i> Impressoras</h2>
+  <div class="d-flex flex-wrap gap-3 align-items-center">
+    <div class="form-check form-switch mb-0 fs-5">
+      <input class="form-check-input" type="checkbox" id="filtro-baixos">
+      <label class="form-check-label" for="filtro-baixos">Só toner baixo</label>
+    </div>
+    <input id="filtro-busca" class="form-control" type="search" placeholder="Buscar impressora" style="width:17rem">
+  </div>
+</div>
+
+{% if grupos %}
+<ul class="nav nav-pills mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" type="button" role="tab"
+            data-bs-toggle="pill" data-bs-target="#aba-todos" data-aba="todos">
+      Todas <span class="badge text-bg-secondary ms-1">{{ impressoras|length }}</span>
+    </button>
+  </li>
+  {% for g in grupos %}
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" type="button" role="tab"
+            data-bs-toggle="pill" data-bs-target="#aba-{{ g.modelo.id }}" data-aba="{{ g.modelo.id }}">
+      {{ g.modelo.nome }} <span class="badge text-bg-secondary ms-1">{{ g.impressoras|length }}</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="aba-todos" role="tabpanel">
+  <div class="row g-3">
+  {% for i in impressoras %}
+  {% include 'estoque/_card_impressora.html' %}
+  {% endfor %}
+  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
+  </div>
+  </div>
+  {% for g in grupos %}
+  <div class="tab-pane fade" id="aba-{{ g.modelo.id }}" role="tabpanel">
+  <div class="row g-3">
+  {% for i in g.impressoras %}
+  {% include 'estoque/_card_impressora.html' %}
+  {% endfor %}
+  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
+  </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="fs-5">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
+{% endif %}
+{% endblock %}

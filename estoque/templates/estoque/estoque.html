@@ -1,21 +1,8 @@
 {% extends "estoque/base.html" %}
+{% block titulo %}Estoque · Controle de Toner{% endblock %}
 {% block conteudo %}
 
-{# ===== Resumo em uma frase ===== #}
-{% if resumo.nivel_baixo or alertas %}
-<div class="resumo-geral atencao mb-4" role="status">
-  <i class="bi bi-exclamation-triangle-fill"></i> Atenção
-  <ul>
-    {% if resumo.nivel_baixo %}<li>{{ resumo.nivel_baixo }} impressora{{ resumo.nivel_baixo|pluralize }} com toner baixo.</li>{% endif %}
-    {% if alertas %}<li>{{ alertas|length }} {% if alertas|length == 1 %}item{% else %}itens{% endif %} para pedir.</li>{% endif %}
-    {% if resumo.pedidos_abertos %}<li>{{ resumo.pedidos_abertos }} pedido{{ resumo.pedidos_abertos|pluralize }} em andamento.</li>{% endif %}
-  </ul>
-</div>
-{% else %}
-<div class="resumo-geral ok mb-4" role="status">
-  <i class="bi bi-check-circle-fill"></i> Tudo certo: nenhum toner baixo e nada para pedir.
-</div>
-{% endif %}
+{% include 'estoque/_resumo.html' %}
 
 {# ===== Estoque ===== #}
 <h2 class="mb-3"><i class="bi bi-box-seam"></i> Estoque da unidade</h2>
@@ -68,7 +55,7 @@
         <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
           {% csrf_token %}
           <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
-          <input type="hidden" name="voltar" value="painel">
+          <input type="hidden" name="voltar" value="estoque">
           <div class="col-auto"><label class="form-label mb-0">Quantidade</label>
             <input class="form-control campo-pequeno" type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></div>
           <div class="col"><label class="form-label mb-0">Quem está pedindo</label>
@@ -82,58 +69,4 @@
   {% endfor %}
 </div>
 {% endif %}
-
-{# ===== Impressoras ===== #}
-<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h2 class="mb-0"><i class="bi bi-printer"></i> Impressoras</h2>
-  <div class="d-flex flex-wrap gap-3 align-items-center">
-    <div class="form-check form-switch mb-0 fs-5">
-      <input class="form-check-input" type="checkbox" id="filtro-baixos">
-      <label class="form-check-label" for="filtro-baixos">Só toner baixo</label>
-    </div>
-    <input id="filtro-busca" class="form-control" type="search" placeholder="Buscar impressora" style="width:17rem">
-  </div>
-</div>
-
-{% if grupos %}
-<ul class="nav nav-pills mb-3" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" type="button" role="tab"
-            data-bs-toggle="pill" data-bs-target="#aba-todos" data-aba="todos">
-      Todas <span class="badge text-bg-secondary ms-1">{{ impressoras|length }}</span>
-    </button>
-  </li>
-  {% for g in grupos %}
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" type="button" role="tab"
-            data-bs-toggle="pill" data-bs-target="#aba-{{ g.modelo.id }}" data-aba="{{ g.modelo.id }}">
-      {{ g.modelo.nome }} <span class="badge text-bg-secondary ms-1">{{ g.impressoras|length }}</span>
-    </button>
-  </li>
-  {% endfor %}
-</ul>
-<div class="tab-content">
-  <div class="tab-pane fade show active" id="aba-todos" role="tabpanel">
-  <div class="row g-3">
-  {% for i in impressoras %}
-  {% include 'estoque/_card_impressora.html' %}
-  {% endfor %}
-  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
-  </div>
-  </div>
-  {% for g in grupos %}
-  <div class="tab-pane fade" id="aba-{{ g.modelo.id }}" role="tabpanel">
-  <div class="row g-3">
-  {% for i in g.impressoras %}
-  {% include 'estoque/_card_impressora.html' %}
-  {% endfor %}
-  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
-  </div>
-  </div>
-  {% endfor %}
-</div>
-{% else %}
-<p class="fs-5">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
-{% endif %}
-
 {% endblock %}

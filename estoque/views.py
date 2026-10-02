@@ -21,26 +21,37 @@ def _inteiro(valor, minimo=0, maximo=None):
     return numero
 
 
-def painel(request):
+def _contexto_base():
+    """Dados do aviso geral, usados no topo das páginas Estoque e Impressoras."""
     impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
-    por_modelo = {}
-    for imp in impressoras:
-        por_modelo.setdefault(imp.modelo, []).append(imp)
-    grupos = [{'modelo': m, 'impressoras': lista}
-              for m, lista in sorted(por_modelo.items(), key=lambda par: par[0].nome.lower())]
-    return render(request, 'estoque/painel.html', {
+    alertas = calcular_alertas(impressoras)
+    return {
         'impressoras': impressoras,
-        'grupos': grupos,
         'consumiveis': consumiveis,
-        'alertas': calcular_alertas(),
+        'alertas': alertas,
         'resumo': {
             'impressoras': len(impressoras),
             'nivel_baixo': sum(1 for i in impressoras if i.nivel_minimo <= NIVEL_BAIXO),
             'abaixo_minimo': sum(1 for c in consumiveis if c.estoque_unidade < c.estoque_minimo),
             'pedidos_abertos': Pedido.objects.filter(status__in=STATUS_EM_ANDAMENTO).count(),
         },
-    })
+    }
+
+
+def pagina_estoque(request):
+    return render(request, 'estoque/estoque.html', _contexto_base())
+
+
+def pagina_impressoras(request):
+    contexto = _contexto_base()
+    por_modelo = {}
+    for imp in contexto['impressoras']:
+        por_modelo.setdefault(imp.modelo, []).append(imp)
+    contexto['grupos'] = [
+        {'modelo': m, 'impressoras': lista}
+        for m, lista in sorted(por_modelo.items(), key=lambda par: par[0].nome.lower())]
+    return render(request, 'estoque/impressoras.html', contexto)
 
 
 @somente_admin
@@ -67,7 +78,7 @@ def atualizar_impressora(request, pk):
             impressora.residuo_na_sala = residuo
             impressora.save(update_fields=['residuo_na_sala'])
         messages.success(request, f'{impressora.nome} atualizada.')
-    return redirect('painel')
+    return redirect('impressoras')
 
 
 @somente_admin
@@ -81,7 +92,7 @@ def atualizar_consumivel(request, pk):
         consumivel.estoque_unidade = estoque
         consumivel.save(update_fields=['estoque_unidade'])
         messages.success(request, f'Estoque de {consumivel.nome} atualizado.')
-    return redirect('painel')
+    return redirect('estoque')
 
 
 def pedidos(request):
@@ -109,7 +120,7 @@ def criar_pedido(request):
         )
         messages.success(request, 'Pedido criado.')
     voltar = request.POST.get('voltar')
-    return redirect(voltar if voltar in ('painel', 'pedidos') else 'pedidos')
+    return redirect(voltar if voltar in ('estoque', 'impressoras', 'pedidos') else 'pedidos')
 
 
 @somente_admin

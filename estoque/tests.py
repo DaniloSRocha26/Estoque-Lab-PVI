@@ -59,14 +59,16 @@ class AlertaETests(TestCase):
 
     def test_criar_pedido_volta_para_a_pagina_de_origem(self):
         dados = {'consumivel': self.toner.id, 'quantidade': 3, 'solicitante': 'Ana'}
-        r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'painel'})
+        r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'estoque'})
         self.assertRedirects(r, '/')
+        r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'impressoras'})
+        self.assertRedirects(r, '/impressoras/')
         r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'http://externo.com'})
         self.assertRedirects(r, '/pedidos/')
 
     def test_paginas_respondem(self):
-        self.assertEqual(self.client.get('/').status_code, 200)
-        self.assertEqual(self.client.get('/pedidos/').status_code, 200)
+        for url in ('/', '/impressoras/', '/pedidos/'):
+            self.assertEqual(self.client.get(url).status_code, 200)
 
 
 class CoresTests(TestCase):
@@ -130,7 +132,7 @@ class AbasTests(TestCase):
             ModeloToner.objects.create(modelo=modelo, cor=cor, consumivel=_toner(f'{nome} toner'))
             Impressora.objects.create(nome=f'{nome} 1', modelo=modelo,
                                       numero_serie=nome, localizacao='Sala')
-        r = self.client.get('/')
+        r = self.client.get('/impressoras/')
         self.assertEqual([g['modelo'].nome for g in r.context['grupos']], ['Epson', 'Konica'])
         self.assertContains(r, 'data-aba=', count=3)  # Todos + 2 modelos
         self.assertContains(r, 'card-impressora h-100', count=4)  # cada impressora em Todos e na sua aba
@@ -210,7 +212,7 @@ class AcessoTests(DjangoTestCase):
         self.admin = _usuario('chefe', 'admin')
 
     def test_anonimo_consulta_sem_controles(self):
-        for url in ('/', '/pedidos/'):
+        for url in ('/', '/impressoras/', '/pedidos/'):
             r = self.client.get(url)
             self.assertEqual(r.status_code, 200)
             self.assertNotContains(r, 'data-ajax')
@@ -229,7 +231,7 @@ class AcessoTests(DjangoTestCase):
 
     def test_visualizador_consulta_mas_nao_ve_controles(self):
         self.client.force_login(self.visualizador)
-        for url in ('/', '/pedidos/'):
+        for url in ('/', '/impressoras/', '/pedidos/'):
             r = self.client.get(url)
             self.assertEqual(r.status_code, 200)
             self.assertNotContains(r, 'data-ajax')
@@ -304,3 +306,36 @@ class UsuariosTests(TestCase):
 
     def test_pagina_de_cadastros_mostra_usuarios(self):
         self.assertContains(self.client.get('/cadastros/'), 'admin_teste')
+
+
+class DivisaoDePaginasTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.toner = _toner('Toner X')
+        modelo = ModeloImpressora.objects.create(nome='Epson', tipo='laser mono')
+        ModeloToner.objects.create(modelo=modelo, cor='preto', consumivel=self.toner)
+        Impressora.objects.create(nome='Epson Sala 2', modelo=modelo, numero_serie='E1',
+                                  localizacao='Sala 2')
+
+    def test_estoque_mostra_itens_e_nao_impressoras(self):
+        r = self.client.get('/')
+        self.assertContains(r, 'Estoque da unidade')
+        self.assertContains(r, 'Toner X')
+        self.assertNotContains(r, 'card-impressora')
+
+    def test_impressoras_mostra_cards_e_nao_o_estoque(self):
+        r = self.client.get('/impressoras/')
+        self.assertContains(r, 'Epson Sala 2')
+        self.assertNotContains(r, 'Estoque da unidade')
+
+    def test_aviso_geral_aparece_nas_duas(self):
+        for url in ('/', '/impressoras/'):
+            self.assertContains(self.client.get(url), 'resumo-geral')
+
+    def test_salvar_volta_para_a_pagina_certa(self):
+        imp = Impressora.objects.get()
+        r = self.client.post(f'/impressoras/{imp.id}/atualizar/', {
+            'nivel_preto': 50, 'sala_preto': 1, 'residuo_na_sala': 0})
+        self.assertRedirects(r, '/impressoras/')
+        r = self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 4})
+        self.assertRedirects(r, '/')
