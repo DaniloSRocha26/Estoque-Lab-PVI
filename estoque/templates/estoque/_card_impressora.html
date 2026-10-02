@@ -32,7 +32,7 @@
             <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
-            <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
+            <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" style="--valor: {{ l.nivel }}%" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
             <div class="d-flex gap-2 align-items-center">
               <label class="mb-0" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva:</label>
               <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">

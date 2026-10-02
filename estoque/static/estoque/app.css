@@ -45,10 +45,6 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 
 /* Controle deslizante com "pegador" grande */
 .form-range { min-width: 8rem; height: 1.6rem; display: block; width: 100%; margin: .15rem 0 .35rem; }
-.form-range::-webkit-slider-runnable-track { height: .75rem; border-radius: .5rem; }
-.form-range::-webkit-slider-thumb { width: 1.4rem; height: 1.4rem; margin-top: -.35rem; }
-.form-range::-moz-range-track { height: .75rem; border-radius: .5rem; }
-.form-range::-moz-range-thumb { width: 1.4rem; height: 1.4rem; }
 
 /* ---------- Cores de toner ---------- */
 .ponto { display: inline-block; width: 1rem; height: 1rem; border-radius: 50%; vertical-align: -2px; border: 2px solid rgba(0,0,0,.35); }
@@ -71,3 +67,21 @@ html { scroll-behavior: smooth; }
 .card-impressora .campo-pequeno { width: 4.5rem; min-height: 2.2rem; padding: .2rem .5rem; }
 .card-impressora .btn-compacto { min-height: 2.2rem; padding: .2rem .7rem; }
 .card-impressora .btn-primary { min-height: 2.4rem; }
+
+/* ---------- Controle deslizante bem visível (trilha escura + parte preenchida + botão com contorno) ---------- */
+.form-range { --valor: 0%; --trilho: #adb5bd; --preenchido: var(--bs-primary); }
+[data-bs-theme="dark"] .form-range { --trilho: #6c757d; }
+.form-range::-webkit-slider-runnable-track {
+  height: .8rem; border-radius: .5rem; border: 1px solid rgba(0,0,0,.35);
+  background: linear-gradient(to right, var(--preenchido) var(--valor), var(--trilho) var(--valor));
+}
+.form-range::-moz-range-track { height: .8rem; border-radius: .5rem; border: 1px solid rgba(0,0,0,.35); background: var(--trilho); }
+.form-range::-moz-range-progress { height: .8rem; border-radius: .5rem; background: var(--preenchido); }
+.form-range::-webkit-slider-thumb {
+  width: 1.5rem; height: 1.5rem; margin-top: -.45rem;
+  border: 3px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+}
+.form-range::-moz-range-thumb {
+  width: 1.5rem; height: 1.5rem; border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+}

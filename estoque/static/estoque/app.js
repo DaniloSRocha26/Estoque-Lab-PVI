@@ -98,6 +98,7 @@
       linha.querySelector('[data-nivel-saida]').textContent = valor + '%';
       linha.querySelector('.progress-bar').style.width = valor + '%';
       linha.querySelector('.progress').setAttribute('aria-valuenow', valor);
+      e.target.style.setProperty('--valor', valor + '%');  // pinta a parte já "preenchida" da trilha
       var estado = linha.querySelector('[data-nivel-estado]');
       var nivel = valor <= NIVEL_BAIXO ? ['Baixo', 'danger'] : valor <= NIVEL_MEDIO ? ['Médio', 'warning'] : ['Bom', 'success'];
       estado.textContent = nivel[0];
