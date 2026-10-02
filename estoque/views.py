@@ -3,7 +3,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .models import Consumivel, Impressora, Pedido
-from .services import calcular_alertas, mudar_status_pedido
+from .services import STATUS_EM_ANDAMENTO, calcular_alertas, mudar_status_pedido
+
+NIVEL_BAIXO = 15  # % considerado baixo (provisório, ver pendências do projeto)
 
 
 def _inteiro(valor, minimo=0, maximo=None):
@@ -20,10 +22,18 @@ def painel(request):
     impressoras = Impressora.objects.select_related(
         'modelo', 'modelo__toner', 'modelo__caixa_residuo'
     ).order_by('localizacao', 'nome')
+    consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
+    alertas = calcular_alertas()
     return render(request, 'estoque/painel.html', {
         'impressoras': impressoras,
-        'consumiveis': Consumivel.objects.order_by('tipo', 'nome'),
-        'alertas': calcular_alertas(),
+        'consumiveis': consumiveis,
+        'alertas': alertas,
+        'resumo': {
+            'impressoras': len(impressoras),
+            'nivel_baixo': sum(1 for i in impressoras if i.nivel_toner <= NIVEL_BAIXO),
+            'abaixo_minimo': sum(1 for c in consumiveis if c.estoque_unidade < c.estoque_minimo),
+            'pedidos_abertos': Pedido.objects.filter(status__in=STATUS_EM_ANDAMENTO).count(),
+        },
     })
 
 
@@ -80,7 +90,8 @@ def criar_pedido(request):
             observacao=request.POST.get('observacao', '').strip(),
         )
         messages.success(request, 'Pedido criado.')
-    return redirect('pedidos')
+    voltar = request.POST.get('voltar')
+    return redirect(voltar if voltar in ('painel', 'pedidos') else 'pedidos')
 
 
 @require_POST

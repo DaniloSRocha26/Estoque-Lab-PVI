@@ -1,0 +1,10 @@
+.kpi .valor { font-size: 1.9rem; font-weight: 600; line-height: 1; }
+.kpi .icone { font-size: 1.6rem; opacity: .85; }
+.card-impressora .progress { height: 18px; }
+.card-impressora .nivel-texto { font-variant-numeric: tabular-nums; }
+.card-impressora.sem-reserva { border-color: var(--bs-warning); }
+.campo-pequeno { width: 6.2rem; }
+.alerta-card { border-left: 4px solid var(--bs-danger); }
+.alerta-card.andamento { border-left-color: var(--bs-warning); }
+.form-range { min-width: 8rem; }
+.salvando { opacity: .6; pointer-events: none; }

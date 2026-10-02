@@ -1,48 +1,60 @@
 {% extends "estoque/base.html" %}
 {% block titulo %}Pedidos · Controle de Toner{% endblock %}
 {% block conteudo %}
-<h2>Novo pedido</h2>
-<form class="linha card" method="post" action="{% url 'criar_pedido' %}">
+<h2 class="h5 mb-3"><i class="bi bi-plus-circle"></i> Novo pedido</h2>
+<form class="card card-body mb-4" method="post" action="{% url 'criar_pedido' %}" data-ajax>
   {% csrf_token %}
-  <label>Item
-    <select name="consumivel">
-      {% for c in consumiveis %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
-    </select></label>
-  <label>Quantidade <input type="number" name="quantidade" min="1" value="1"></label>
-  <label>Solicitante <input name="solicitante" required></label>
-  <label>Observação <input name="observacao"></label>
-  <button>Criar pedido</button>
+  <input type="hidden" name="voltar" value="pedidos">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3"><label class="form-label small mb-0">Item</label>
+      <select class="form-select form-select-sm" name="consumivel">
+        {% for c in consumiveis %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label small mb-0">Quantidade</label>
+      <input class="form-control form-control-sm" type="number" name="quantidade" min="1" value="1"></div>
+    <div class="col-md-3"><label class="form-label small mb-0">Solicitante</label>
+      <input class="form-control form-control-sm" name="solicitante" required></div>
+    <div class="col-md-3"><label class="form-label small mb-0">Observação</label>
+      <input class="form-control form-control-sm" name="observacao"></div>
+    <div class="col-md-1"><button class="btn btn-primary btn-sm w-100">Criar</button></div>
+  </div>
 </form>
 
-<h2>Pedidos</h2>
-<table>
-  <tr><th>Data</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Status</th></tr>
-  {% for p in pedidos %}
-  <tr>
-    <td>{{ p.criado_em|date:"d/m/Y H:i" }}</td>
-    <td>{{ p.consumivel.nome }}</td>
-    <td>{{ p.quantidade }}</td>
-    <td>{{ p.solicitante }}</td>
-    <td>{{ p.observacao }}</td>
-    <td>
-      {% if p.status == 'recebido' %}
-        {{ p.get_status_display }}
-      {% else %}
-      <form class="linha" style="margin:0" method="post" action="{% url 'status_pedido' p.id %}">
-        {% csrf_token %}
-        <select name="status">
-          {% for valor, rotulo in status_opcoes %}
-          <option value="{{ valor }}" {% if valor == p.status %}selected{% endif %}>{{ rotulo }}</option>
-          {% endfor %}
-        </select>
-        <button>Atualizar</button>
-      </form>
-      {% endif %}
-    </td>
-  </tr>
-  {% empty %}
-  <tr><td colspan="6" class="suave">Nenhum pedido registrado.</td></tr>
-  {% endfor %}
-</table>
-<p class="suave">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade (e o pedido não pode mais ser alterado).</p>
+<h2 class="h5 mb-3"><i class="bi bi-list-check"></i> Pedidos</h2>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Data</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for p in pedidos %}
+      <tr>
+        <td class="text-nowrap">{{ p.criado_em|date:"d/m/Y H:i" }}</td>
+        <td>{{ p.consumivel.nome }}</td>
+        <td>{{ p.quantidade }}</td>
+        <td>{{ p.solicitante }}</td>
+        <td>{{ p.observacao }}</td>
+        <td>
+          {% if p.status == 'recebido' %}
+            <span class="badge text-bg-success">Recebido</span>
+          {% else %}
+          <form class="d-flex gap-2" method="post" action="{% url 'status_pedido' p.id %}" data-ajax>
+            {% csrf_token %}
+            <select class="form-select form-select-sm" name="status" style="width:8.5rem">
+              {% for valor, rotulo in status_opcoes %}
+              <option value="{{ valor }}" {% if valor == p.status %}selected{% endif %}>{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-outline-primary btn-sm">Atualizar</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-body-secondary py-4">Nenhum pedido registrado.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="text-body-secondary small mt-2">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade e o pedido não pode mais ser alterado.</p>
 {% endblock %}

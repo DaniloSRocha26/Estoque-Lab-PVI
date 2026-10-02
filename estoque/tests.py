@@ -34,6 +34,13 @@ class AlertaETests(TestCase):
         self.toner.refresh_from_db()
         self.assertEqual(self.toner.estoque_unidade, 3)
 
+    def test_criar_pedido_volta_para_a_pagina_de_origem(self):
+        dados = {'consumivel': self.toner.id, 'quantidade': 3, 'solicitante': 'Ana'}
+        r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'painel'})
+        self.assertRedirects(r, '/')
+        r = self.client.post('/pedidos/criar/', {**dados, 'voltar': 'http://externo.com'})
+        self.assertRedirects(r, '/pedidos/')
+
     def test_paginas_respondem(self):
         self.assertEqual(self.client.get('/').status_code, 200)
         self.assertEqual(self.client.get('/pedidos/').status_code, 200)

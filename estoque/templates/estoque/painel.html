@@ -1,79 +1,140 @@
 {% extends "estoque/base.html" %}
 {% block conteudo %}
 
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card kpi h-100"><div class="card-body d-flex justify-content-between align-items-center">
+      <div><div class="valor">{{ resumo.impressoras }}</div><div class="text-body-secondary small">Impressoras</div></div>
+      <i class="bi bi-printer icone text-primary"></i></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi h-100"><div class="card-body d-flex justify-content-between align-items-center">
+      <div><div class="valor {% if resumo.nivel_baixo %}text-danger{% endif %}">{{ resumo.nivel_baixo }}</div><div class="text-body-secondary small">Com nível baixo</div></div>
+      <i class="bi bi-droplet-half icone text-danger"></i></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi h-100"><div class="card-body d-flex justify-content-between align-items-center">
+      <div><div class="valor {% if resumo.abaixo_minimo %}text-warning{% endif %}">{{ resumo.abaixo_minimo }}</div><div class="text-body-secondary small">Itens abaixo do mínimo</div></div>
+      <i class="bi bi-box-seam icone text-warning"></i></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi h-100"><div class="card-body d-flex justify-content-between align-items-center">
+      <div><div class="valor">{{ resumo.pedidos_abertos }}</div><div class="text-body-secondary small">Pedidos em andamento</div></div>
+      <i class="bi bi-truck icone text-success"></i></div></div>
+  </div>
+</div>
+
 {% if alertas %}
-<h2>Alertas de reposição</h2>
-<div class="grade">
+<h2 class="h5 mb-3"><i class="bi bi-exclamation-triangle-fill text-danger"></i> Alertas de reposição</h2>
+<div class="row g-3 mb-4">
   {% for a in alertas %}
-  <div class="card alerta {% if a.em_andamento %}andamento{% endif %}">
-    {% if a.em_andamento %}
-      <strong>{{ a.consumivel.nome }}</strong>: pedido em andamento
-    {% else %}
-      <strong>Necessário pedir {{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }} de {{ a.consumivel.nome }}</strong>
-    {% endif %}
-    <div class="suave">
-      Estoque {{ a.consumivel.estoque_unidade }} / mínimo {{ a.consumivel.estoque_minimo }}.
-      Sem reserva na sala: {% for i in a.impressoras %}{{ i.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  <div class="col-md-6">
+    <div class="card alerta-card {% if a.em_andamento %}andamento{% endif %} h-100">
+      <div class="card-body">
+        {% if a.em_andamento %}
+          <div class="fw-semibold"><i class="bi bi-truck text-warning"></i> {{ a.consumivel.nome }}: pedido em andamento</div>
+        {% else %}
+          <div class="fw-semibold">Necessário pedir {{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }} de {{ a.consumivel.nome }}</div>
+        {% endif %}
+        <div class="text-body-secondary small mb-2">
+          Estoque {{ a.consumivel.estoque_unidade }} / mínimo {{ a.consumivel.estoque_minimo }}.
+          Sem reserva na sala: {% for i in a.impressoras %}{{ i.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </div>
+        {% if not a.em_andamento %}
+        <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
+          {% csrf_token %}
+          <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
+          <input type="hidden" name="voltar" value="painel">
+          <div class="col-auto"><label class="form-label small mb-0">Quantidade</label>
+            <input class="form-control form-control-sm campo-pequeno" type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></div>
+          <div class="col"><label class="form-label small mb-0">Solicitante</label>
+            <input class="form-control form-control-sm" name="solicitante" required></div>
+          <div class="col-auto"><button class="btn btn-danger btn-sm">Criar pedido</button></div>
+        </form>
+        {% endif %}
+      </div>
     </div>
-    {% if not a.em_andamento %}
-    <form class="linha" method="post" action="{% url 'criar_pedido' %}">
-      {% csrf_token %}
-      <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
-      <label>Quantidade
-        <input type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></label>
-      <label>Solicitante <input name="solicitante" required></label>
-      <button>Criar pedido</button>
-    </form>
-    {% endif %}
   </div>
   {% endfor %}
 </div>
 {% endif %}
 
-<h2>Estoque da unidade</h2>
-<div class="grade">
+<h2 class="h5 mb-3"><i class="bi bi-box-seam"></i> Estoque da unidade</h2>
+<div class="row g-3 mb-4">
   {% for c in consumiveis %}
-  <div class="card">
-    <strong>{{ c.nome }}</strong> <span class="suave">({{ c.get_tipo_display }})</span>
-    <div class="suave">Mínimo desejado: {{ c.estoque_minimo }}</div>
-    <form class="linha" method="post" action="{% url 'atualizar_consumivel' c.id %}">
-      {% csrf_token %}
-      <label>Em estoque
-        <input type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}"></label>
-      <button>Salvar</button>
-      {% if c.estoque_unidade < c.estoque_minimo %}<span class="abaixo">abaixo do mínimo</span>{% endif %}
-    </form>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex justify-content-between">
+        <div class="fw-semibold">{{ c.nome }}</div>
+        <span class="badge text-bg-secondary align-self-start">{{ c.get_tipo_display }}</span>
+      </div>
+      <div class="text-body-secondary small mb-2">Mínimo desejado: {{ c.estoque_minimo }}</div>
+      <form class="d-flex gap-2 align-items-center" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
+        {% csrf_token %}
+        <input class="form-control form-control-sm campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Estoque">
+        <button class="btn btn-primary btn-sm">Salvar</button>
+        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">abaixo do mínimo</span>{% endif %}
+      </form>
+    </div></div>
   </div>
   {% empty %}
-  <p class="suave">Nenhum item cadastrado. Use o menu Cadastros.</p>
+  <p class="text-body-secondary">Nenhum item cadastrado. Use o menu Cadastros.</p>
   {% endfor %}
 </div>
 
-<h2>Impressoras</h2>
-<div class="grade">
-  {% for i in impressoras %}
-  <div class="card">
-    <h3>{{ i.nome }}</h3>
-    <div class="suave">{{ i.modelo.nome }} · {{ i.modelo.tipo }} · S/N {{ i.numero_serie }}</div>
-    <div class="suave">{{ i.localizacao }}</div>
-    <div class="barra" title="{{ i.nivel_toner }}%">
-      <span class="{% if i.nivel_toner <= 15 %}baixo{% elif i.nivel_toner <= 40 %}medio{% else %}ok{% endif %}"
-            style="width: {{ i.nivel_toner }}%"></span>
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
+  <h2 class="h5 mb-0"><i class="bi bi-printer"></i> Impressoras</h2>
+  <div class="d-flex gap-3 align-items-center">
+    <div class="form-check form-switch mb-0">
+      <input class="form-check-input" type="checkbox" id="filtro-baixos">
+      <label class="form-check-label small" for="filtro-baixos">Só nível baixo</label>
     </div>
-    <div class="suave">Toner {{ i.modelo.toner.nome }}: {{ i.nivel_toner }}%</div>
-    <form class="linha" method="post" action="{% url 'atualizar_impressora' i.id %}">
-      {% csrf_token %}
-      <label>Nível %
-        <input type="number" name="nivel_toner" min="0" max="100" value="{{ i.nivel_toner }}"></label>
-      <label>Toners na sala
-        <input type="number" name="toner_na_sala" min="0" value="{{ i.toner_na_sala }}"></label>
-      <label>Resíduo na sala
-        <input type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></label>
-      <button>Salvar</button>
-    </form>
+    <input id="filtro-busca" class="form-control form-control-sm" type="search" placeholder="Buscar nome, local ou série" style="width:16rem">
+  </div>
+</div>
+
+<div class="row g-3">
+  {% for i in impressoras %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card card-impressora h-100 {% if i.toner_na_sala == 0 %}sem-reserva{% endif %}"
+         data-nivel="{{ i.nivel_toner }}"
+         data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h3 class="h6 mb-0">{{ i.nome }}</h3>
+            <div class="text-body-secondary small">{{ i.modelo.nome }} · {{ i.modelo.tipo }}</div>
+          </div>
+          {% if i.nivel_toner <= 15 %}<span class="badge text-bg-danger">Baixo</span>
+          {% elif i.nivel_toner <= 40 %}<span class="badge text-bg-warning">Médio</span>
+          {% else %}<span class="badge text-bg-success">OK</span>{% endif %}
+        </div>
+        <div class="text-body-secondary small mt-1"><i class="bi bi-geo-alt"></i> {{ i.localizacao }} · S/N {{ i.numero_serie }}</div>
+
+        <div class="progress mt-3" role="progressbar" aria-valuenow="{{ i.nivel_toner }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar {% if i.nivel_toner <= 15 %}bg-danger{% elif i.nivel_toner <= 40 %}bg-warning{% else %}bg-success{% endif %}"
+               style="width: {{ i.nivel_toner }}%">{{ i.nivel_toner }}%</div>
+        </div>
+        <div class="text-body-secondary small mt-1">Toner: {{ i.modelo.toner.nome }}{% if i.modelo.caixa_residuo %} · Resíduo: {{ i.modelo.caixa_residuo.nome }}{% endif %}</div>
+
+        <form class="mt-3" method="post" action="{% url 'atualizar_impressora' i.id %}" data-ajax>
+          {% csrf_token %}
+          <label class="form-label small mb-0">Nível de toner: <strong class="nivel-texto" data-nivel-saida>{{ i.nivel_toner }}%</strong></label>
+          <input class="form-range" type="range" name="nivel_toner" min="0" max="100" step="1" value="{{ i.nivel_toner }}" data-nivel-range>
+          <div class="d-flex gap-2 align-items-end">
+            <div><label class="form-label small mb-0">Toners na sala</label>
+              <input class="form-control form-control-sm campo-pequeno" type="number" name="toner_na_sala" min="0" value="{{ i.toner_na_sala }}"></div>
+            <div><label class="form-label small mb-0">Resíduo na sala</label>
+              <input class="form-control form-control-sm campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}"></div>
+            <button class="btn btn-primary btn-sm ms-auto">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
   {% empty %}
-  <p class="suave">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
+  <p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
   {% endfor %}
+  <p id="sem-resultado" class="text-body-secondary d-none">Nenhuma impressora encontrada com esse filtro.</p>
 </div>
 {% endblock %}
