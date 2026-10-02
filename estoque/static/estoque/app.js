@@ -1,8 +1,11 @@
 (function () {
   'use strict';
 
-  var NIVEL_BAIXO = 15; // mesmos limites provisórios usados no servidor (views.py e templates)
-  var NIVEL_MEDIO = 40;
+  // Limites vindos do servidor (estoque/niveis.py), para ficarem sempre iguais aos das telas
+  var NIVEL_BAIXO = parseInt(document.body.dataset.nivelBaixo, 10);
+  var NIVEL_MEDIO = parseInt(document.body.dataset.nivelMedio, 10);
+  var INTERVALO_AUTO = 60 * 1000;   // atualização automática: a cada 1 minuto
+  var PAUSA_APOS_DIGITAR = 30 * 1000; // não atualiza se você mexeu em algum campo há menos que isso
   var filtros = { busca: '', baixos: false, aba: null };
 
   // ----- Tema claro/escuro -----
@@ -102,6 +105,66 @@
     }
   });
 
+  // ----- Proteção contra perder o que está sendo digitado -----
+  var ultimaInteracao = 0;
+  ['input', 'change', 'keydown', 'pointerdown'].forEach(function (nome) {
+    document.addEventListener(nome, function (e) {
+      var conteudo = document.getElementById('conteudo');
+      if (!conteudo.contains(e.target)) return;
+      ultimaInteracao = Date.now();
+      if (nome === 'input' || nome === 'change') {
+        var form = e.target.closest ? e.target.closest('form[data-ajax]') : null;
+        if (form) form.dataset.sujo = '1';  // tem alteração ainda não salva
+      }
+    }, true);
+  });
+
+  function editando() {
+    var conteudo = document.getElementById('conteudo');
+    if (conteudo.querySelector('form[data-sujo], form.salvando')) return true;
+    var ativo = document.activeElement;
+    var campoDeTexto = ativo && conteudo.contains(ativo) &&
+      ativo.matches('input:not([type=checkbox]):not([type=radio]), select, textarea');
+    return !!campoDeTexto && (Date.now() - ultimaInteracao) < PAUSA_APOS_DIGITAR;
+  }
+
+  // ----- Atualização automática -----
+  var avisoAuto = document.getElementById('aviso-auto');
+  var ultimaAtualizacao = Date.now();
+
+  function marcarHora() {
+    ultimaAtualizacao = Date.now();
+    document.getElementById('hora-auto').textContent =
+      new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function atualizarSozinho() {
+    var conteudo = document.getElementById('conteudo');
+    if (!conteudo.dataset.auto || document.hidden || editando()) return;
+    fetch(location.href, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (resp) {
+        if (!resp.ok || (resp.redirected && resp.url.indexOf('/entrar/') !== -1)) throw new Error('ignorar');
+        return resp.text();
+      }).then(function (html) {
+        if (editando()) return; // a pessoa começou a editar enquanto a página carregava
+        var novo = new DOMParser().parseFromString(html, 'text/html').getElementById('conteudo');
+        if (!novo) return;
+        mostrarMensagens(novo);
+        conteudo.innerHTML = novo.innerHTML;
+        iniciarPagina();
+        marcarHora();
+      }).catch(function () { /* sem conexão: tenta de novo no próximo ciclo */ });
+  }
+
+  if (document.getElementById('conteudo').dataset.auto) {
+    avisoAuto.hidden = false;
+    marcarHora();
+    setInterval(atualizarSozinho, INTERVALO_AUTO);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && Date.now() - ultimaAtualizacao > INTERVALO_AUTO) atualizarSozinho();
+    });
+  }
+
   // ----- Envio de formulários sem recarregar -----
   document.addEventListener('submit', function (e) {
     var form = e.target;
@@ -129,6 +192,7 @@
       mostrarMensagens(novo);
       atual.innerHTML = novo.innerHTML;
       iniciarPagina();
+      marcarHora();
     }).catch(function (erro) {
       form.classList.remove('salvando');
       toast(erro.message || 'Erro de conexão.', 'error');

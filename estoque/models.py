@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 # Ordem de exibição (padrão CMYK)
@@ -10,7 +11,21 @@ CORES = [
 ORDEM_CORES = [valor for valor, _ in CORES]
 
 
-class Consumivel(models.Model):
+class ComAtualizacao(models.Model):
+    """Guarda quando o registro foi salvo pela última vez (inclusive em saves parciais)."""
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        campos = kwargs.get('update_fields')
+        if campos is not None:
+            kwargs['update_fields'] = {*campos, 'atualizado_em'}
+        super().save(*args, **kwargs)
+
+
+class Consumivel(ComAtualizacao):
     TIPOS = [('toner', 'Toner'), ('residuo', 'Caixa de resíduo')]
     nome = models.CharField(max_length=100)
     tipo = models.CharField(max_length=10, choices=TIPOS)
@@ -94,7 +109,7 @@ class Impressora(models.Model):
         return sorted(self.niveis.all(), key=lambda n: ORDEM_CORES.index(n.cor))
 
 
-class NivelToner(models.Model):
+class NivelToner(ComAtualizacao):
     """Nível (0 a 100, informado pelo usuário) e reserva na sala de uma cor da impressora."""
     impressora = models.ForeignKey(Impressora, on_delete=models.CASCADE, related_name='niveis')
     cor = models.CharField(max_length=10, choices=CORES)
@@ -108,6 +123,29 @@ class NivelToner(models.Model):
 
     def __str__(self):
         return f'{self.impressora} · {self.get_cor_display()}: {self.nivel}%'
+
+
+class Troca(models.Model):
+    """Histórico: cada vez que um toner foi trocado em uma impressora."""
+    impressora = models.ForeignKey(Impressora, on_delete=models.SET_NULL, null=True,
+                                   related_name='trocas')
+    impressora_nome = models.CharField(max_length=100)  # mantém o histórico se a impressora sair
+    cor = models.CharField(max_length=10, choices=CORES)
+    toner = models.ForeignKey(Consumivel, on_delete=models.SET_NULL, null=True, related_name='+')
+    toner_nome = models.CharField(max_length=100, blank=True)
+    nivel_anterior = models.PositiveIntegerField()
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='+')
+    usuario_nome = models.CharField(max_length=150, blank=True)
+    registrado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-registrado_em', '-id']
+        verbose_name = 'troca de toner'
+        verbose_name_plural = 'trocas de toner'
+
+    def __str__(self):
+        return f'{self.impressora_nome} · {self.get_cor_display()} · {self.registrado_em:%d/%m/%Y}'
 
 
 class Pedido(models.Model):

@@ -1,7 +1,12 @@
+import re
+from datetime import timedelta
+
 from django.contrib.auth.models import Group, User
 from django.test import TestCase as DjangoTestCase
+from django.utils import timezone
 
-from .models import Consumivel, Impressora, ModeloImpressora, ModeloToner, Pedido
+from .models import (Consumivel, Impressora, ModeloImpressora, ModeloToner, NivelToner, Pedido,
+                     Troca)
 from .services import calcular_alertas, mudar_status_pedido
 
 
@@ -353,3 +358,119 @@ class CorNoEstoqueTests(TestCase):
         self.assertEqual(itens['Toner Ciano'].cor, 'ciano')
         self.assertIsNone(itens['Caixa X'].cor)
         self.assertContains(r, 'ponto cor-ciano')
+
+
+class NovasFuncoesBase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.toner = _toner('Konica Toner Ciano', estoque=5, minimo=2)
+        modelo = ModeloImpressora.objects.create(nome='Konica', tipo='laser colorida')
+        ModeloToner.objects.create(modelo=modelo, cor='ciano', consumivel=self.toner)
+        self.imp = Impressora.objects.create(nome='K1', modelo=modelo, numero_serie='S1',
+                                             localizacao='Lab')
+        self.nivel = self.imp.niveis.get(cor='ciano')
+
+    def _definir(self, nivel, na_sala=1):
+        self.nivel.nivel, self.nivel.na_sala = nivel, na_sala
+        self.nivel.save()
+
+
+class LimitesDeNivelTests(NovasFuncoesBase):
+    def _baixas(self):
+        return self.client.get('/').context['resumo']['nivel_baixo']
+
+    def test_ate_25_e_baixo_acima_nao(self):
+        self._definir(25)
+        self.assertEqual(self._baixas(), 1)
+        self._definir(26)
+        self.assertEqual(self._baixas(), 0)
+
+    def test_palavras_na_tela_seguem_os_limites(self):
+        for nivel, palavra in ((25, 'Baixo'), (26, 'Médio'), (55, 'Médio'), (56, 'Bom')):
+            self._definir(nivel)
+            html = self.client.get('/impressoras/').content.decode()
+            # o selo da cor é o que vem logo antes do percentual
+            trecho = html.split('data-nivel-saida')[0].rsplit('data-nivel-estado>', 1)[1]
+            self.assertTrue(trecho.startswith(palavra), (nivel, trecho[:20]))
+
+    def test_limites_chegam_ao_javascript(self):
+        self.assertContains(self.client.get('/'), 'data-nivel-baixo="25" data-nivel-medio="55"')
+
+
+class TrocaTests(NovasFuncoesBase):
+    def test_troca_em_um_clique(self):
+        self._definir(10, na_sala=2)
+        self.client.post(f'/impressoras/{self.imp.id}/trocar/ciano/')
+        self.nivel.refresh_from_db()
+        self.assertEqual((self.nivel.nivel, self.nivel.na_sala), (100, 1))
+        troca = Troca.objects.get()
+        self.assertEqual((troca.impressora_nome, troca.cor, troca.nivel_anterior, troca.toner_nome),
+                         ('K1', 'ciano', 10, 'Konica Toner Ciano'))
+        self.assertEqual(troca.usuario_nome, 'admin_teste')
+
+    def test_sem_reserva_nao_troca(self):
+        self._definir(10, na_sala=0)
+        self.client.post(f'/impressoras/{self.imp.id}/trocar/ciano/')
+        self.nivel.refresh_from_db()
+        self.assertEqual(self.nivel.nivel, 10)
+        self.assertEqual(Troca.objects.count(), 0)
+
+    def test_cor_invalida_ou_que_a_impressora_nao_tem(self):
+        self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/trocar/roxo/').status_code, 404)
+        self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/trocar/preto/').status_code, 404)
+
+    def test_visualizador_e_anonimo_nao_trocam(self):
+        self._definir(10, na_sala=2)
+        self.client.logout()
+        self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/trocar/ciano/').status_code, 302)
+        self.client.force_login(_usuario('ana', 'visualizador'))
+        self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/trocar/ciano/').status_code, 403)
+        self.assertEqual(Troca.objects.count(), 0)
+
+    def test_historico_lista_filtra_e_sobrevive_a_exclusao_da_impressora(self):
+        self._definir(10, na_sala=3)
+        self.client.post(f'/impressoras/{self.imp.id}/trocar/ciano/')
+        self.assertContains(self.client.get('/historico/'), 'K1')
+        self.assertContains(self.client.get(f'/historico/?impressora={self.imp.id}'), 'Konica Toner Ciano')
+        self.assertNotContains(self.client.get('/historico/?impressora=999999'), 'Konica Toner Ciano')
+        self.imp.delete()
+        self.assertContains(self.client.get('/historico/'), 'K1')
+
+    def test_historico_e_aberto_para_consulta(self):
+        self.client.logout()
+        self.assertEqual(self.client.get('/historico/').status_code, 200)
+
+
+class AtualizadoEmTests(NovasFuncoesBase):
+    def test_salvar_parcial_atualiza_a_data(self):
+        antes = NivelToner.objects.filter(pk=self.nivel.pk).values_list('atualizado_em', flat=True)[0]
+        NivelToner.objects.filter(pk=self.nivel.pk).update(atualizado_em=antes - timedelta(days=30))
+        nivel = NivelToner.objects.get(pk=self.nivel.pk)
+        nivel.nivel = 50
+        nivel.save(update_fields=['nivel'])
+        nivel.refresh_from_db()
+        self.assertGreater(nivel.atualizado_em, antes - timedelta(days=1))
+
+    def test_destaque_quando_passa_de_7_dias(self):
+        self.assertNotContains(self.client.get('/impressoras/'), 'confira os níveis')
+        NivelToner.objects.filter(pk=self.nivel.pk).update(
+            atualizado_em=timezone.now() - timedelta(days=8))
+        self.assertContains(self.client.get('/impressoras/'), 'confira os níveis')
+
+    def test_estoque_mostra_atualizado(self):
+        self.assertContains(self.client.get('/'), 'Atualizado')
+
+
+class PaginaEAtualizacaoAutomaticaTests(NovasFuncoesBase):
+    def test_ids_do_html_sao_unicos(self):
+        html = self.client.get('/impressoras/').content.decode()
+        ids = re.findall(r'\bid="([^"]+)"', html)
+        repetidos = {i for i in ids if ids.count(i) > 1}
+        self.assertEqual(repetidos, set())
+
+    def test_atualizacao_automatica_so_onde_nao_ha_formulario_longo(self):
+        for url in ('/', '/impressoras/', '/pedidos/', '/historico/'):
+            self.assertContains(self.client.get(url), 'data-auto="1"')
+        self.assertNotContains(self.client.get('/cadastros/'), 'data-auto="1"')
+        self.client.logout()
+        self.assertNotContains(self.client.get('/entrar/'), 'data-auto="1"')

@@ -1,14 +1,16 @@
 from django.contrib import messages
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .acesso import somente_admin
-from .models import CORES, Consumivel, Impressora, ModeloToner, Pedido
-from .services import (STATUS_EM_ANDAMENTO, calcular_alertas, impressoras_com_niveis,
-                       mudar_status_pedido)
+from .models import (CORES, ORDEM_CORES, Consumivel, Impressora, ModeloToner, NivelToner, Pedido,
+                     Troca)
+from .niveis import NIVEL_BAIXO
+from .services import (STATUS_EM_ANDAMENTO, SemReserva, calcular_alertas, impressoras_com_niveis,
+                       mudar_status_pedido, trocar_toner)
 
-NIVEL_BAIXO = 15  # % considerado baixo (provisório, ver pendências do projeto)
 
 
 def _inteiro(valor, minimo=0, maximo=None):
@@ -137,3 +139,37 @@ def status_pedido(request, pk):
         pedido = mudar_status_pedido(pk, novo)
         messages.success(request, f'Pedido atualizado para "{pedido.get_status_display()}".')
     return redirect('pedidos')
+
+
+@somente_admin
+@require_POST
+def trocar_toner_view(request, pk, cor):
+    impressora = get_object_or_404(Impressora, pk=pk)
+    if cor not in ORDEM_CORES:
+        raise Http404
+    get_object_or_404(NivelToner, impressora=impressora, cor=cor)
+    nome_cor = dict(CORES)[cor]
+    try:
+        trocar_toner(impressora.id, cor, request.user)
+    except SemReserva:
+        messages.error(request, f'Não há toner {nome_cor.lower()} de reserva na sala da {impressora.nome}. '
+                                'Informe a quantidade na sala e tente de novo.')
+    else:
+        messages.success(request, f'Troca registrada: {impressora.nome}, {nome_cor}. '
+                                  'O nível voltou para 100%.')
+    return redirect('impressoras')
+
+
+def pagina_historico(request):
+    trocas = Troca.objects.select_related('impressora')
+    escolhida = request.GET.get('impressora', '')
+    if escolhida.isdigit():
+        trocas = trocas.filter(impressora_id=int(escolhida))
+    else:
+        escolhida = ''
+    return render(request, 'estoque/historico.html', {
+        'trocas': trocas[:300],
+        'impressoras': Impressora.objects.order_by('nome'),
+        'escolhida': escolhida,
+        'cores': dict(CORES),
+    })

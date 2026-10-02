@@ -1,5 +1,7 @@
 {% extends "estoque/base.html" %}
+{% load humanize %}
 {% block titulo %}Estoque · Controle de Toner{% endblock %}
+{% block auto %}1{% endblock %}
 {% block conteudo %}
 
 {% include 'estoque/_resumo.html' %}
@@ -26,6 +28,7 @@
         {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
       </div>
       {% endif %}
+      <div class="mt-2 text-body-secondary" title="{{ c.atualizado_em|date:'d/m/Y H:i' }}"><i class="bi bi-clock-history"></i> Atualizado {{ c.atualizado_em|naturaltime }}</div>
     </div></div>
   </div>
   {% empty %}

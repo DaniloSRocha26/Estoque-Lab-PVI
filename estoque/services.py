@@ -1,9 +1,12 @@
 from collections import defaultdict
+from datetime import timedelta
 
 from django.db import transaction
+from django.utils import timezone
 
-from .models import (ORDEM_CORES, Consumivel, Impressora, ModeloImpressora,
-                     ModeloToner, Pedido)
+from .models import (ORDEM_CORES, Consumivel, Impressora, ModeloImpressora, ModeloToner,
+                     NivelToner, Pedido, Troca)
+from .niveis import DIAS_DESATUALIZADO
 
 STATUS_EM_ANDAMENTO = ('pendente', 'enviado')
 
@@ -15,6 +18,7 @@ def impressoras_com_niveis():
         .prefetch_related('modelo__toners__consumivel', 'niveis')
         .order_by('localizacao', 'nome')
     )
+    limite = timezone.now() - timedelta(days=DIAS_DESATUALIZADO)
     for imp in impressoras:
         toner_da_cor = {t.cor: t.consumivel for t in imp.modelo.toners.all()}
         imp.colorida = len(toner_da_cor) > 1
@@ -23,6 +27,9 @@ def impressoras_com_niveis():
             linha.toner = toner_da_cor.get(linha.cor)
         imp.sem_reserva_sala = any(l.na_sala == 0 for l in imp.linhas)
         imp.nivel_minimo = min((l.nivel for l in imp.linhas), default=100)
+        # a cor conferida há mais tempo define o "atualizado em" do card
+        imp.atualizado_em_nivel = min((l.atualizado_em for l in imp.linhas), default=None)
+        imp.desatualizada = bool(imp.atualizado_em_nivel and imp.atualizado_em_nivel < limite)
     return impressoras
 
 
@@ -87,3 +94,31 @@ def criar_modelo(nome, colorida, usa_residuo, estoque_minimo):
                                           estoque_minimo=estoque_minimo)
         ModeloToner.objects.create(modelo=modelo, cor=cor, consumivel=toner)
     return modelo
+
+
+class SemReserva(Exception):
+    """Não há toner reserva na sala para fazer a troca."""
+
+
+@transaction.atomic
+def trocar_toner(impressora_id, cor, usuario):
+    """Troca de toner em um clique: tira 1 da reserva da sala, volta o nível a 100% e registra."""
+    nivel = (NivelToner.objects.select_for_update()
+             .select_related('impressora__modelo').get(impressora_id=impressora_id, cor=cor))
+    if nivel.na_sala < 1:
+        raise SemReserva
+    impressora = nivel.impressora
+    ligacao = (ModeloToner.objects.select_related('consumivel')
+               .filter(modelo=impressora.modelo, cor=cor).first())
+    toner = ligacao.consumivel if ligacao else None
+    nome_usuario = (usuario.get_full_name() or usuario.get_username()) if usuario.is_authenticated else ''
+
+    troca = Troca.objects.create(
+        impressora=impressora, impressora_nome=impressora.nome, cor=cor,
+        toner=toner, toner_nome=toner.nome if toner else '',
+        nivel_anterior=nivel.nivel,
+        usuario=usuario if usuario.is_authenticated else None, usuario_nome=nome_usuario)
+    nivel.na_sala -= 1
+    nivel.nivel = 100
+    nivel.save(update_fields=['na_sala', 'nivel'])
+    return troca

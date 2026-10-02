@@ -1,5 +1,6 @@
 {% extends "estoque/base.html" %}
 {% block titulo %}Impressoras · Controle de Toner{% endblock %}
+{% block auto %}1{% endblock %}
 {% block conteudo %}
 
 {% include 'estoque/_resumo.html' %}
@@ -37,7 +38,7 @@
   <div class="tab-pane fade show active" id="aba-todos" role="tabpanel">
   <div class="row g-3">
   {% for i in impressoras %}
-  {% include 'estoque/_card_impressora.html' %}
+  {% include 'estoque/_card_impressora.html' with aba='todas' %}
   {% endfor %}
   <p class="sem-resultado fs-6 d-none">Nenhuma impressora encontrada.</p>
   </div>
@@ -46,7 +47,7 @@
   <div class="tab-pane fade" id="aba-{{ g.modelo.id }}" role="tabpanel">
   <div class="row g-3">
   {% for i in g.impressoras %}
-  {% include 'estoque/_card_impressora.html' %}
+  {% include 'estoque/_card_impressora.html' with aba=g.modelo.id %}
   {% endfor %}
   <p class="sem-resultado fs-6 d-none">Nenhuma impressora encontrada.</p>
   </div>

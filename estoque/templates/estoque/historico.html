@@ -1,0 +1,39 @@
+{% extends "estoque/base.html" %}
+{% block titulo %}Histórico · Controle de Toner{% endblock %}
+{% block auto %}1{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de trocas de toner</h2>
+  <form class="d-flex gap-2 align-items-center" method="get">
+    <label class="mb-0 fw-semibold" for="filtro-impressora">Impressora:</label>
+    <select id="filtro-impressora" class="form-select" name="impressora" style="width:15rem">
+      <option value="">Todas</option>
+      {% for i in impressoras %}<option value="{{ i.id }}" {% if escolhida == i.id|stringformat:"s" %}selected{% endif %}>{{ i.nome }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-outline-primary">Filtrar</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Quando</th><th>Impressora</th><th>Cor</th><th>Toner</th><th>Nível antes</th><th>Quem</th></tr></thead>
+      <tbody>
+      {% for t in trocas %}
+      <tr>
+        <td class="text-nowrap">{{ t.registrado_em|date:"d/m/Y H:i" }}</td>
+        <td>{{ t.impressora_nome }}</td>
+        <td class="text-nowrap"><span class="ponto cor-{{ t.cor }}"></span> {{ t.get_cor_display }}</td>
+        <td>{{ t.toner_nome|default:"—" }}</td>
+        <td>{{ t.nivel_anterior }}%</td>
+        <td>{{ t.usuario_nome|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-body-secondary py-4">Nenhuma troca registrada ainda. Use o botão "Troquei o toner" na página Impressoras.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="text-body-secondary mt-2">Mostrando as 300 trocas mais recentes.</p>
+{% endblock %}

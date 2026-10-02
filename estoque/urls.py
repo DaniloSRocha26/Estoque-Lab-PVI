@@ -5,6 +5,8 @@ from . import cadastros, usuarios, views
 urlpatterns = [
     path('', views.pagina_estoque, name='estoque'),
     path('impressoras/', views.pagina_impressoras, name='impressoras'),
+    path('impressoras/<int:pk>/trocar/<str:cor>/', views.trocar_toner_view, name='trocar_toner'),
+    path('historico/', views.pagina_historico, name='historico'),
     path('impressoras/<int:pk>/atualizar/', views.atualizar_impressora, name='atualizar_impressora'),
     path('consumiveis/<int:pk>/atualizar/', views.atualizar_consumivel, name='atualizar_consumivel'),
     path('pedidos/', views.pedidos, name='pedidos'),
