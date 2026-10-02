@@ -1,0 +1,112 @@
+from django.contrib import messages
+from django.db.models import ProtectedError
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from .forms import (ConsumivelEditarForm, ConsumivelNovoForm, ImpressoraForm, ModeloNomeForm,
+                    ModeloNovoForm)
+from .models import Consumivel, Impressora, ModeloImpressora
+from .services import criar_modelo
+
+
+def _erros(request, form):
+    for campo, lista in form.errors.items():
+        rotulo = form.fields[campo].label or campo if campo in form.fields else ''
+        for erro in lista:
+            messages.error(request, f'{rotulo.capitalize()}: {erro}' if rotulo else erro)
+
+
+def _salvar(request, form, sucesso):
+    if form.is_valid():
+        form.save()
+        messages.success(request, sucesso)
+    else:
+        _erros(request, form)
+
+
+def _excluir(request, objeto, sucesso, em_uso):
+    try:
+        objeto.delete()
+        messages.success(request, sucesso)
+    except ProtectedError:
+        messages.error(request, em_uso)
+
+
+def cadastros(request):
+    return render(request, 'estoque/cadastros.html', {
+        'impressoras': Impressora.objects.select_related('modelo').order_by('modelo__nome', 'nome'),
+        'modelos': ModeloImpressora.objects.select_related('caixa_residuo')
+                   .prefetch_related('toners__consumivel', 'impressora_set').order_by('nome'),
+        'consumiveis': Consumivel.objects.order_by('tipo', 'nome'),
+    })
+
+
+# ---- Impressoras ----
+@require_POST
+def impressora_criar(request):
+    _salvar(request, ImpressoraForm(request.POST), 'Impressora cadastrada.')
+    return redirect('cadastros')
+
+
+@require_POST
+def impressora_editar(request, pk):
+    obj = get_object_or_404(Impressora, pk=pk)
+    _salvar(request, ImpressoraForm(request.POST, instance=obj), f'{obj.nome} atualizada.')
+    return redirect('cadastros')
+
+
+@require_POST
+def impressora_excluir(request, pk):
+    obj = get_object_or_404(Impressora, pk=pk)
+    _excluir(request, obj, f'{obj.nome} excluída.', 'Não foi possível excluir a impressora.')
+    return redirect('cadastros')
+
+
+# ---- Modelos ----
+@require_POST
+def modelo_criar(request):
+    form = ModeloNovoForm(request.POST)
+    if form.is_valid():
+        d = form.cleaned_data
+        criar_modelo(d['nome'], d['tipo'] == 'colorida', d['usa_residuo'], d['estoque_minimo'])
+        messages.success(request, f'Modelo {d["nome"]} criado com os toners.')
+    else:
+        _erros(request, form)
+    return redirect('cadastros')
+
+
+@require_POST
+def modelo_renomear(request, pk):
+    obj = get_object_or_404(ModeloImpressora, pk=pk)
+    _salvar(request, ModeloNomeForm(request.POST, instance=obj), 'Modelo renomeado.')
+    return redirect('cadastros')
+
+
+@require_POST
+def modelo_excluir(request, pk):
+    obj = get_object_or_404(ModeloImpressora, pk=pk)
+    _excluir(request, obj, f'Modelo {obj.nome} excluído.',
+             'Este modelo ainda tem impressoras cadastradas. Exclua ou mude as impressoras antes.')
+    return redirect('cadastros')
+
+
+# ---- Itens de estoque ----
+@require_POST
+def consumivel_criar(request):
+    _salvar(request, ConsumivelNovoForm(request.POST), 'Item criado.')
+    return redirect('cadastros')
+
+
+@require_POST
+def consumivel_editar(request, pk):
+    obj = get_object_or_404(Consumivel, pk=pk)
+    _salvar(request, ConsumivelEditarForm(request.POST, instance=obj), f'{obj.nome} atualizado.')
+    return redirect('cadastros')
+
+
+@require_POST
+def consumivel_excluir(request, pk):
+    obj = get_object_or_404(Consumivel, pk=pk)
+    _excluir(request, obj, f'{obj.nome} excluído.',
+             'Este item está em uso (modelo ou pedido) e não pode ser excluído.')
+    return redirect('cadastros')

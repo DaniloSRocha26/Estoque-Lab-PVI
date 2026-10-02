@@ -78,7 +78,7 @@
     </div></div>
   </div>
   {% empty %}
-  <p class="text-body-secondary">Nenhum item cadastrado. Use o menu Cadastros.</p>
+  <p class="text-body-secondary">Nenhum item cadastrado. Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.</p>
   {% endfor %}
 </div>
 
@@ -131,6 +131,6 @@
   {% endfor %}
 </div>
 {% else %}
-<p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
+<p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.</p>
 {% endif %}
 {% endblock %}

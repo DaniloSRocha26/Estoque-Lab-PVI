@@ -116,3 +116,70 @@ class AbasTests(TestCase):
         self.assertEqual([g['modelo'].nome for g in r.context['grupos']], ['Epson', 'Konica'])
         self.assertContains(r, 'data-aba=', count=3)  # Todos + 2 modelos
         self.assertContains(r, 'card-impressora h-100', count=4)  # cada impressora em Todos e na sua aba
+
+
+class CadastrosTests(TestCase):
+    def _criar_modelo(self, nome='Konica', tipo='colorida', residuo='on'):
+        dados = {'nome': nome, 'tipo': tipo, 'estoque_minimo': 2}
+        if residuo:
+            dados['usa_residuo'] = residuo
+        return self.client.post('/cadastros/modelos/criar/', dados)
+
+    def test_paginas_respondem(self):
+        self.assertEqual(self.client.get('/cadastros/').status_code, 200)
+
+    def test_modelo_colorido_cria_quatro_toners_e_residuo(self):
+        self._criar_modelo()
+        modelo = ModeloImpressora.objects.get(nome='Konica')
+        self.assertEqual(sorted(t.cor for t in modelo.toners.all()),
+                         ['amarelo', 'ciano', 'magenta', 'preto'])
+        self.assertIsNotNone(modelo.caixa_residuo)
+        self.assertEqual(Consumivel.objects.filter(tipo='toner').count(), 4)
+
+    def test_modelo_mono_cria_so_preto_sem_residuo(self):
+        self._criar_modelo('Epson', 'mono', residuo=None)
+        modelo = ModeloImpressora.objects.get(nome='Epson')
+        self.assertEqual([t.cor for t in modelo.toners.all()], ['preto'])
+        self.assertIsNone(modelo.caixa_residuo)
+
+    def test_impressora_nova_ganha_niveis_por_cor(self):
+        self._criar_modelo()
+        modelo = ModeloImpressora.objects.get(nome='Konica')
+        self.client.post('/cadastros/impressoras/criar/', {
+            'nome': 'K1', 'modelo': modelo.id, 'numero_serie': 'S1', 'localizacao': 'Lab'})
+        self.assertEqual(Impressora.objects.get(nome='K1').niveis.count(), 4)
+
+    def test_numero_de_serie_repetido_e_recusado(self):
+        self._criar_modelo()
+        modelo = ModeloImpressora.objects.get(nome='Konica')
+        dados = {'nome': 'K1', 'modelo': modelo.id, 'numero_serie': 'S1', 'localizacao': 'Lab'}
+        self.client.post('/cadastros/impressoras/criar/', dados)
+        self.client.post('/cadastros/impressoras/criar/', {**dados, 'nome': 'K2'})
+        self.assertEqual(Impressora.objects.count(), 1)
+
+    def test_trocar_modelo_da_impressora_refaz_os_niveis(self):
+        self._criar_modelo()
+        self._criar_modelo('Epson', 'mono', residuo=None)
+        konica = ModeloImpressora.objects.get(nome='Konica')
+        epson = ModeloImpressora.objects.get(nome='Epson')
+        imp = Impressora.objects.create(nome='X', modelo=konica, numero_serie='S9', localizacao='L')
+        self.client.post(f'/cadastros/impressoras/{imp.id}/editar/', {
+            'nome': 'X', 'modelo': epson.id, 'numero_serie': 'S9', 'localizacao': 'L'})
+        self.assertEqual([n.cor for n in imp.niveis.all()], ['preto'])
+
+    def test_nao_exclui_modelo_com_impressora(self):
+        self._criar_modelo()
+        modelo = ModeloImpressora.objects.get(nome='Konica')
+        Impressora.objects.create(nome='X', modelo=modelo, numero_serie='S9', localizacao='L')
+        self.client.post(f'/cadastros/modelos/{modelo.id}/excluir/')
+        self.assertTrue(ModeloImpressora.objects.filter(pk=modelo.pk).exists())
+
+    def test_nao_exclui_item_em_uso_mas_exclui_impressora(self):
+        self._criar_modelo()
+        modelo = ModeloImpressora.objects.get(nome='Konica')
+        item = modelo.toners.first().consumivel
+        self.client.post(f'/cadastros/itens/{item.id}/excluir/')
+        self.assertTrue(Consumivel.objects.filter(pk=item.pk).exists())
+        imp = Impressora.objects.create(nome='X', modelo=modelo, numero_serie='S9', localizacao='L')
+        self.client.post(f'/cadastros/impressoras/{imp.id}/excluir/')
+        self.assertFalse(Impressora.objects.filter(pk=imp.pk).exists())

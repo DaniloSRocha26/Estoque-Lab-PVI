@@ -1,0 +1,149 @@
+{% extends "estoque/base.html" %}
+{% block titulo %}Cadastros · Controle de Toner{% endblock %}
+{% block conteudo %}
+
+<ul class="nav nav-pills mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="pill" data-bs-target="#cad-impressoras" data-aba="cad-impressoras">Impressoras <span class="badge text-bg-secondary">{{ impressoras|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#cad-modelos" data-aba="cad-modelos">Modelos <span class="badge text-bg-secondary">{{ modelos|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#cad-itens" data-aba="cad-itens">Itens de estoque <span class="badge text-bg-secondary">{{ consumiveis|length }}</span></button></li>
+</ul>
+
+<div class="tab-content">
+
+  {# ================= IMPRESSORAS ================= #}
+  <div class="tab-pane fade show active" id="cad-impressoras">
+    <div class="card card-body mb-3">
+      <h2 class="h6">Nova impressora</h2>
+      {% if modelos %}
+      <form class="row g-2 align-items-end" method="post" action="{% url 'impressora_criar' %}" data-ajax>
+        {% csrf_token %}
+        <div class="col-md"><label class="form-label small mb-0">Nome</label><input class="form-control form-control-sm" name="nome" required placeholder="Ex.: Konica Recepção"></div>
+        <div class="col-md"><label class="form-label small mb-0">Modelo</label>
+          <select class="form-select form-select-sm" name="modelo" required>
+            {% for m in modelos %}<option value="{{ m.id }}">{{ m.nome }}</option>{% endfor %}
+          </select></div>
+        <div class="col-md"><label class="form-label small mb-0">Nº de série</label><input class="form-control form-control-sm" name="numero_serie" required></div>
+        <div class="col-md"><label class="form-label small mb-0">Localização</label><input class="form-control form-control-sm" name="localizacao" required placeholder="Ex.: Sala 2"></div>
+        <div class="col-md-auto"><button class="btn btn-primary btn-sm">Adicionar</button></div>
+      </form>
+      {% else %}
+      <p class="mb-0 text-body-secondary small">Cadastre primeiro um modelo (aba Modelos).</p>
+      {% endif %}
+    </div>
+
+    <div class="card card-body">
+      <h2 class="h6">Impressoras cadastradas</h2>
+      {% for i in impressoras %}
+      <div class="d-flex gap-2 align-items-end border-top py-2">
+        <form class="row g-2 align-items-end flex-grow-1" method="post" action="{% url 'impressora_editar' i.id %}" data-ajax>
+          {% csrf_token %}
+          <div class="col-md"><input class="form-control form-control-sm" name="nome" value="{{ i.nome }}" required aria-label="Nome"></div>
+          <div class="col-md">
+            <select class="form-select form-select-sm" name="modelo" aria-label="Modelo">
+              {% for m in modelos %}<option value="{{ m.id }}" {% if m.id == i.modelo_id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+            </select></div>
+          <div class="col-md"><input class="form-control form-control-sm" name="numero_serie" value="{{ i.numero_serie }}" required aria-label="Nº de série"></div>
+          <div class="col-md"><input class="form-control form-control-sm" name="localizacao" value="{{ i.localizacao }}" required aria-label="Localização"></div>
+          <div class="col-md-auto"><button class="btn btn-outline-primary btn-sm">Salvar</button></div>
+        </form>
+        <form method="post" action="{% url 'impressora_excluir' i.id %}" data-ajax data-confirmar="Excluir a impressora {{ i.nome }}?">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm" title="Excluir"><i class="bi bi-trash"></i></button>
+        </form>
+      </div>
+      {% empty %}
+      <p class="text-body-secondary small mb-0">Nenhuma impressora ainda.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ================= MODELOS ================= #}
+  <div class="tab-pane fade" id="cad-modelos">
+    <div class="card card-body mb-3">
+      <h2 class="h6">Novo modelo</h2>
+      <p class="text-body-secondary small">Os toners (um por cor) e a caixa de resíduo são criados automaticamente, com estoque 0. Depois é só ajustar as quantidades no Painel.</p>
+      <form class="row g-2 align-items-end" method="post" action="{% url 'modelo_criar' %}" data-ajax>
+        {% csrf_token %}
+        <div class="col-md-3"><label class="form-label small mb-0">Nome do modelo</label><input class="form-control form-control-sm" name="nome" required placeholder="Ex.: Konica Minolta"></div>
+        <div class="col-md-4"><label class="form-label small mb-0">Tipo</label>
+          <select class="form-select form-select-sm" name="tipo">
+            <option value="colorida">Colorida (preto, ciano, magenta e amarelo)</option>
+            <option value="mono">Preto e branco (só preto)</option>
+          </select></div>
+        <div class="col-md-2"><label class="form-label small mb-0">Estoque mínimo</label><input class="form-control form-control-sm" type="number" name="estoque_minimo" min="0" value="2"></div>
+        <div class="col-md-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="usa_residuo" id="usa-residuo" checked><label class="form-check-label small" for="usa-residuo">Usa caixa de resíduo</label></div></div>
+        <div class="col-md-auto"><button class="btn btn-primary btn-sm">Criar modelo</button></div>
+      </form>
+    </div>
+
+    <div class="card card-body">
+      <h2 class="h6">Modelos cadastrados</h2>
+      {% for m in modelos %}
+      <div class="border-top py-2">
+        <div class="d-flex gap-2 align-items-center">
+          <form class="d-flex gap-2 flex-grow-1" method="post" action="{% url 'modelo_renomear' m.id %}" data-ajax>
+            {% csrf_token %}
+            <input class="form-control form-control-sm" name="nome" value="{{ m.nome }}" required aria-label="Nome" style="max-width:20rem">
+            <button class="btn btn-outline-primary btn-sm">Renomear</button>
+          </form>
+          <span class="small text-body-secondary">{{ m.impressora_set.all|length }} impressora(s)</span>
+          <form method="post" action="{% url 'modelo_excluir' m.id %}" data-ajax data-confirmar="Excluir o modelo {{ m.nome }}?">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" title="Excluir"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+        <div class="small mt-1">
+          {% for t in m.toners_ordenados %}
+            <span class="me-3"><span class="ponto cor-{{ t.cor }}"></span> {{ t.get_cor_display }}: <span class="text-body-secondary">{{ t.consumivel.nome }}</span></span>
+          {% endfor %}
+          {% if m.caixa_residuo %}<span class="text-body-secondary"><i class="bi bi-trash3"></i> {{ m.caixa_residuo.nome }}</span>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-body-secondary small mb-0">Nenhum modelo ainda.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ================= ITENS DE ESTOQUE ================= #}
+  <div class="tab-pane fade" id="cad-itens">
+    <div class="card card-body mb-3">
+      <h2 class="h6">Novo item avulso</h2>
+      <p class="text-body-secondary small">Os toners de um modelo novo já são criados em <strong>Modelos</strong>. Use este formulário só para itens extras.</p>
+      <form class="row g-2 align-items-end" method="post" action="{% url 'consumivel_criar' %}" data-ajax>
+        {% csrf_token %}
+        <div class="col-md"><label class="form-label small mb-0">Nome</label><input class="form-control form-control-sm" name="nome" required></div>
+        <div class="col-md-3"><label class="form-label small mb-0">Tipo</label>
+          <select class="form-select form-select-sm" name="tipo"><option value="toner">Toner</option><option value="residuo">Caixa de resíduo</option></select></div>
+        <div class="col-md-2"><label class="form-label small mb-0">Em estoque</label><input class="form-control form-control-sm" type="number" name="estoque_unidade" min="0" value="0"></div>
+        <div class="col-md-2"><label class="form-label small mb-0">Mínimo</label><input class="form-control form-control-sm" type="number" name="estoque_minimo" min="0" value="1"></div>
+        <div class="col-md-auto"><button class="btn btn-primary btn-sm">Adicionar</button></div>
+      </form>
+    </div>
+
+    <div class="card card-body">
+      <h2 class="h6">Itens cadastrados</h2>
+      {% for c in consumiveis %}
+      <div class="d-flex gap-2 align-items-end border-top py-2">
+        <form class="row g-2 align-items-end flex-grow-1" method="post" action="{% url 'consumivel_editar' c.id %}" data-ajax>
+          {% csrf_token %}
+          <div class="col-md"><input class="form-control form-control-sm" name="nome" value="{{ c.nome }}" required aria-label="Nome"></div>
+          <div class="col-md-auto"><span class="badge text-bg-secondary">{{ c.get_tipo_display }}</span></div>
+          <div class="col-md-2"><label class="form-label small mb-0">Em estoque</label><input class="form-control form-control-sm" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}"></div>
+          <div class="col-md-2"><label class="form-label small mb-0">Mínimo</label><input class="form-control form-control-sm" type="number" name="estoque_minimo" min="0" value="{{ c.estoque_minimo }}"></div>
+          <div class="col-md-auto"><button class="btn btn-outline-primary btn-sm">Salvar</button></div>
+        </form>
+        <form method="post" action="{% url 'consumivel_excluir' c.id %}" data-ajax data-confirmar="Excluir o item {{ c.nome }}?">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm" title="Excluir"><i class="bi bi-trash"></i></button>
+        </form>
+      </div>
+      {% empty %}
+      <p class="text-body-secondary small mb-0">Nenhum item ainda.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<p class="text-body-secondary small mt-4">Precisa de algo mais avançado (ex.: trocar o toner usado por uma cor de um modelo)? Use o <a href="/admin/">painel avançado</a>.</p>
+{% endblock %}

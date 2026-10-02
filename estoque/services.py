@@ -2,7 +2,8 @@ from collections import defaultdict
 
 from django.db import transaction
 
-from .models import Consumivel, Impressora, Pedido
+from .models import (ORDEM_CORES, Consumivel, Impressora, ModeloImpressora,
+                     ModeloToner, Pedido)
 
 STATUS_EM_ANDAMENTO = ('pendente', 'enviado')
 
@@ -70,3 +71,19 @@ def mudar_status_pedido(pedido_id, novo_status):
         consumivel.estoque_unidade += pedido.quantidade
         consumivel.save(update_fields=['estoque_unidade'])
     return pedido
+
+
+@transaction.atomic
+def criar_modelo(nome, colorida, usa_residuo, estoque_minimo):
+    """Cria o modelo com os toners de cada cor (e a caixa de resíduo) já ligados e com estoque 0."""
+    residuo = None
+    if usa_residuo:
+        residuo = Consumivel.objects.create(nome=f'{nome} - Caixa de resíduo', tipo='residuo',
+                                            estoque_minimo=estoque_minimo)
+    modelo = ModeloImpressora.objects.create(
+        nome=nome, tipo='laser colorida' if colorida else 'laser mono', caixa_residuo=residuo)
+    for cor in (ORDEM_CORES if colorida else ['preto']):
+        toner = Consumivel.objects.create(nome=f'{nome} - Toner {cor.capitalize()}', tipo='toner',
+                                          estoque_minimo=estoque_minimo)
+        ModeloToner.objects.create(modelo=modelo, cor=cor, consumivel=toner)
+    return modelo

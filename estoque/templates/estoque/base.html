@@ -25,7 +25,7 @@
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'painel' %}active{% endif %}" href="{% url 'painel' %}">Painel</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'pedidos' %}active{% endif %}" href="{% url 'pedidos' %}">Pedidos</a></li>
-        <li class="nav-item"><a class="nav-link" href="/admin/">Cadastros</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'cadastros' %}active{% endif %}" href="{% url 'cadastros' %}">Cadastros</a></li>
       </ul>
       <button id="alternar-tema" class="btn btn-outline-secondary btn-sm" type="button" title="Alternar tema">
         <i class="bi bi-circle-half"></i>

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import cadastros, views
 
 urlpatterns = [
     path('', views.painel, name='painel'),
@@ -9,4 +9,15 @@ urlpatterns = [
     path('pedidos/', views.pedidos, name='pedidos'),
     path('pedidos/criar/', views.criar_pedido, name='criar_pedido'),
     path('pedidos/<int:pk>/status/', views.status_pedido, name='status_pedido'),
+
+    path('cadastros/', cadastros.cadastros, name='cadastros'),
+    path('cadastros/impressoras/criar/', cadastros.impressora_criar, name='impressora_criar'),
+    path('cadastros/impressoras/<int:pk>/editar/', cadastros.impressora_editar, name='impressora_editar'),
+    path('cadastros/impressoras/<int:pk>/excluir/', cadastros.impressora_excluir, name='impressora_excluir'),
+    path('cadastros/modelos/criar/', cadastros.modelo_criar, name='modelo_criar'),
+    path('cadastros/modelos/<int:pk>/renomear/', cadastros.modelo_renomear, name='modelo_renomear'),
+    path('cadastros/modelos/<int:pk>/excluir/', cadastros.modelo_excluir, name='modelo_excluir'),
+    path('cadastros/itens/criar/', cadastros.consumivel_criar, name='consumivel_criar'),
+    path('cadastros/itens/<int:pk>/editar/', cadastros.consumivel_editar, name='consumivel_editar'),
+    path('cadastros/itens/<int:pk>/excluir/', cadastros.consumivel_excluir, name='consumivel_excluir'),
 ]

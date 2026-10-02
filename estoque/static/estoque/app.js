@@ -103,6 +103,7 @@
     var form = e.target;
     if (!form.matches('form[data-ajax]')) return;
     e.preventDefault();
+    if (form.dataset.confirmar && !confirm(form.dataset.confirmar)) return;
     form.classList.add('salvando');
 
     fetch(form.action, {
