@@ -2,7 +2,7 @@
   'use strict';
 
   var NIVEL_BAIXO = 15; // mesmo limite provisório usado no servidor (views.py)
-  var filtros = { busca: '', baixos: false };
+  var filtros = { busca: '', baixos: false, aba: null };
 
   // ----- Tema claro/escuro -----
   document.getElementById('alternar-tema').addEventListener('click', function () {
@@ -37,16 +37,32 @@
   // ----- Filtros do painel -----
   function aplicarFiltros() {
     var termo = filtros.busca.trim().toLowerCase();
-    var visiveis = 0;
-    document.querySelectorAll('.card-impressora').forEach(function (card) {
-      var texto = card.getAttribute('data-busca') || '';
-      var nivel = parseInt(card.getAttribute('data-nivel'), 10);
-      var ok = (!termo || texto.indexOf(termo) !== -1) && (!filtros.baixos || nivel <= 15);
-      card.parentElement.classList.toggle('d-none', !ok);
-      if (ok) visiveis++;
+    document.querySelectorAll('.tab-pane').forEach(function (aba) {
+      var visiveis = 0;
+      aba.querySelectorAll('.card-impressora').forEach(function (card) {
+        var texto = card.getAttribute('data-busca') || '';
+        var nivel = parseInt(card.getAttribute('data-nivel'), 10);
+        var ok = (!termo || texto.indexOf(termo) !== -1) && (!filtros.baixos || nivel <= NIVEL_BAIXO);
+        card.parentElement.classList.toggle('d-none', !ok);
+        if (ok) visiveis++;
+      });
+      var vazio = aba.querySelector('.sem-resultado');
+      if (vazio) vazio.classList.toggle('d-none', visiveis > 0);
     });
-    var vazio = document.getElementById('sem-resultado');
-    if (vazio) vazio.classList.toggle('d-none', visiveis > 0 || !document.querySelector('.card-impressora'));
+  }
+
+  function restaurarAba() {
+    if (!filtros.aba) return;
+    var botao = document.querySelector('[data-aba="' + filtros.aba + '"]');
+    if (botao) {
+      // sem animação ao restaurar, para não "piscar" depois de salvar
+      var painel = document.querySelector(botao.getAttribute('data-bs-target'));
+      document.querySelectorAll('.nav-pills .nav-link.active, .tab-pane.active').forEach(function (el) {
+        el.classList.remove('active', 'show');
+      });
+      botao.classList.add('active');
+      painel.classList.add('active', 'show');
+    }
   }
 
   function iniciarPagina() {
@@ -60,9 +76,15 @@
       baixos.checked = filtros.baixos;
       baixos.addEventListener('change', function () { filtros.baixos = baixos.checked; aplicarFiltros(); });
     }
+    restaurarAba();
     aplicarFiltros();
     mostrarMensagens(document);
   }
+
+  // Guarda a aba escolhida para reabri-la depois de salvar
+  document.addEventListener('shown.bs.tab', function (e) {
+    filtros.aba = e.target.getAttribute('data-aba');
+  });
 
   // Valor do controle deslizante de nível em tempo real
   document.addEventListener('input', function (e) {

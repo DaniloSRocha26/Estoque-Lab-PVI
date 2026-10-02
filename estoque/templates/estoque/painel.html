@@ -93,8 +93,22 @@
   </div>
 </div>
 
-<div class="row g-3">
-  {% for i in impressoras %}
+{% if grupos %}
+<ul class="nav nav-pills mb-3" role="tablist">
+  {% for g in grupos %}
+  <li class="nav-item" role="presentation">
+    <button class="nav-link {% if forloop.first %}active{% endif %}" type="button" role="tab"
+            data-bs-toggle="pill" data-bs-target="#aba-{{ g.modelo.id }}" data-aba="{{ g.modelo.id }}">
+      {{ g.modelo.nome }} <span class="badge text-bg-secondary ms-1">{{ g.impressoras|length }}</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+<div class="tab-content">
+  {% for g in grupos %}
+  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="aba-{{ g.modelo.id }}" role="tabpanel">
+  <div class="row g-3">
+  {% for i in g.impressoras %}
   <div class="col-md-6 col-xl-4">
     <div class="card card-impressora h-100 {% if i.sem_reserva_sala %}sem-reserva{% endif %}"
          data-nivel="{{ i.nivel_minimo }}"
@@ -149,9 +163,13 @@
       </div>
     </div>
   </div>
-  {% empty %}
-  <p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
   {% endfor %}
-  <p id="sem-resultado" class="text-body-secondary d-none">Nenhuma impressora encontrada com esse filtro.</p>
+  <p class="sem-resultado text-body-secondary d-none">Nenhuma impressora encontrada com esse filtro.</p>
+  </div>
+  </div>
+  {% endfor %}
 </div>
+{% else %}
+<p class="text-body-secondary">Nenhuma impressora cadastrada. Use o menu Cadastros.</p>
+{% endif %}
 {% endblock %}

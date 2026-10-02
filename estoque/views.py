@@ -23,8 +23,13 @@ def _inteiro(valor, minimo=0, maximo=None):
 def painel(request):
     impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
+    por_modelo = {}
+    for imp in impressoras:
+        por_modelo.setdefault(imp.modelo, []).append(imp)
+    grupos = [{'modelo': m, 'impressoras': lista}
+              for m, lista in sorted(por_modelo.items(), key=lambda par: par[0].nome.lower())]
     return render(request, 'estoque/painel.html', {
-        'impressoras': impressoras,
+        'grupos': grupos,
         'consumiveis': consumiveis,
         'alertas': calcular_alertas(),
         'resumo': {

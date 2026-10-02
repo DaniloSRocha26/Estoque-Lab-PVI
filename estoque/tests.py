@@ -103,3 +103,15 @@ class CoresTests(TestCase):
         dados['nivel_amarelo'] = 150
         self.client.post(f'/impressoras/{self.imp.id}/atualizar/', dados)
         self.assertEqual(self.imp.niveis.get(cor='preto').nivel, 100)
+
+
+class AbasTests(TestCase):
+    def test_painel_cria_uma_aba_por_modelo(self):
+        for nome, cor in (('Konica', 'ciano'), ('Epson', 'preto')):
+            modelo = ModeloImpressora.objects.create(nome=nome, tipo='laser')
+            ModeloToner.objects.create(modelo=modelo, cor=cor, consumivel=_toner(f'{nome} toner'))
+            Impressora.objects.create(nome=f'{nome} 1', modelo=modelo,
+                                      numero_serie=nome, localizacao='Sala')
+        r = self.client.get('/')
+        self.assertEqual([g['modelo'].nome for g in r.context['grupos']], ['Epson', 'Konica'])
+        self.assertContains(r, 'data-aba=', count=2)
