@@ -8,7 +8,7 @@
 <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
   <h2 class="mb-0"><i class="bi bi-printer"></i> Impressoras</h2>
   <div class="d-flex flex-wrap gap-3 align-items-center">
-    <div class="form-check form-switch mb-0 fs-5">
+    <div class="form-check form-switch mb-0 fs-6">
       <input class="form-check-input" type="checkbox" id="filtro-baixos">
       <label class="form-check-label" for="filtro-baixos">Só toner baixo</label>
     </div>
@@ -39,7 +39,7 @@
   {% for i in impressoras %}
   {% include 'estoque/_card_impressora.html' %}
   {% endfor %}
-  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
+  <p class="sem-resultado fs-6 d-none">Nenhuma impressora encontrada.</p>
   </div>
   </div>
   {% for g in grupos %}
@@ -48,12 +48,12 @@
   {% for i in g.impressoras %}
   {% include 'estoque/_card_impressora.html' %}
   {% endfor %}
-  <p class="sem-resultado fs-5 d-none">Nenhuma impressora encontrada.</p>
+  <p class="sem-resultado fs-6 d-none">Nenhuma impressora encontrada.</p>
   </div>
   </div>
   {% endfor %}
 </div>
 {% else %}
-<p class="fs-5">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
+<p class="fs-6">Nenhuma impressora cadastrada.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
 {% endif %}
 {% endblock %}

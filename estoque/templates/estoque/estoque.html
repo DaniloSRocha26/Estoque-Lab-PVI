@@ -10,7 +10,7 @@
   {% for c in consumiveis %}
   <div class="col-md-6 col-xl-4">
     <div class="card h-100"><div class="card-body">
-      <div class="fs-5 fw-bold">{{ c.nome }}</div>
+      <div class="fs-6 fw-bold">{{ c.nome }}</div>
       <div class="mb-2">{{ c.get_tipo_display }} · ideal: pelo menos {{ c.estoque_minimo }}</div>
       {% if pode_editar %}
       <form class="d-flex gap-2 align-items-center flex-wrap" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
@@ -22,14 +22,14 @@
       </form>
       {% else %}
       <div class="d-flex gap-2 align-items-center">
-        <span class="fs-4">Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
+        <span class="fs-5">Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
         {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
       </div>
       {% endif %}
     </div></div>
   </div>
   {% empty %}
-  <p class="fs-5">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
+  <p class="fs-6">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
   {% endfor %}
 </div>
 {# ===== Alertas ===== #}
@@ -42,10 +42,10 @@
       <div class="card-body">
         {% if a.em_andamento %}
           <div class="titulo"><i class="bi bi-truck text-warning"></i> {{ a.consumivel.nome }}</div>
-          <div class="fs-5 fw-semibold mb-2">Pedido já feito, aguardando chegar.</div>
+          <div class="fs-6 fw-semibold mb-2">Pedido já feito, aguardando chegar.</div>
         {% else %}
           <div class="titulo">Pedir {{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }}</div>
-          <div class="fs-5 fw-semibold mb-2">{{ a.consumivel.nome }}</div>
+          <div class="fs-6 fw-semibold mb-2">{{ a.consumivel.nome }}</div>
         {% endif %}
         <div class="mb-2">
           Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }}).<br>
