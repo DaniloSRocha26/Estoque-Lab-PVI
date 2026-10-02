@@ -88,6 +88,15 @@ class SalasParaReabastecerTests(TestCase):
     def test_aviso_geral_menciona_salas_sem_reserva(self):
         self.assertContains(self.client.get('/impressoras/'), 'sem reserva nas salas')
 
+    def test_link_do_aviso_leva_direto_para_a_secao(self):
+        r = self.client.get('/impressoras/')
+        self.assertContains(r, 'href="/#salas-reabastecer"')
+        self.assertContains(self.client.get('/'), 'id="salas-reabastecer"')
+
+    def test_sem_aviso_de_atualizacao_no_rodape(self):
+        self.assertNotContains(self.client.get('/'), 'se atualiza sozinha')
+        self.assertContains(self.client.get('/'), 'data-auto="1"')  # mas continua atualizando
+
     def test_visualizador_nao_repoe(self):
         self.client.force_login(_usuario('ana', 'visualizador'))
         self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/repor/ciano/').status_code, 403)

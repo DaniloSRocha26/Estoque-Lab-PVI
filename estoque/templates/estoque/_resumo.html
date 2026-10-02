@@ -3,7 +3,7 @@
   <i class="bi bi-exclamation-triangle-fill"></i> Atenção
   <ul>
     {% if resumo.nivel_baixo %}<li>{{ resumo.nivel_baixo }} impressora{{ resumo.nivel_baixo|pluralize }} com toner baixo.</li>{% endif %}
-    {% if reabastecer %}<li>{{ reabastecer|length }} {% if reabastecer|length == 1 %}item sem reserva na sala{% else %}itens sem reserva nas salas{% endif %} (veja <a href="{% url 'estoque' %}">Salas para reabastecer</a>).</li>{% endif %}
+    {% if reabastecer %}<li>{{ reabastecer|length }} {% if reabastecer|length == 1 %}item sem reserva na sala{% else %}itens sem reserva nas salas{% endif %} (veja <a href="{% url 'estoque' %}#salas-reabastecer">Salas para reabastecer</a>).</li>{% endif %}
     {% if alertas %}<li>{{ alertas|length }} {% if alertas|length == 1 %}item{% else %}itens{% endif %} para pedir.</li>{% endif %}
     {% if resumo.pedidos_abertos %}<li>{{ resumo.pedidos_abertos }} pedido{{ resumo.pedidos_abertos|pluralize }} em andamento.</li>{% endif %}
   </ul>

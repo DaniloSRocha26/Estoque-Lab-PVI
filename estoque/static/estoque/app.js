@@ -129,13 +129,10 @@
   }
 
   // ----- Atualização automática -----
-  var avisoAuto = document.getElementById('aviso-auto');
   var ultimaAtualizacao = Date.now();
 
   function marcarHora() {
     ultimaAtualizacao = Date.now();
-    document.getElementById('hora-auto').textContent =
-      new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
   function atualizarSozinho() {
@@ -157,7 +154,6 @@
   }
 
   if (document.getElementById('conteudo').dataset.auto) {
-    avisoAuto.hidden = false;
     marcarHora();
     setInterval(atualizarSozinho, INTERVALO_AUTO);
     document.addEventListener('visibilitychange', function () {

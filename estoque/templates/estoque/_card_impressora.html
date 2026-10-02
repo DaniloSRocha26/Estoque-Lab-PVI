@@ -34,10 +34,10 @@
             <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
-            <div class="mt-2"><label class="form-label mb-0">Arraste para informar o nível:</label>
+            <div class="mt-2">
               <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" data-nivel-range aria-label="Nível {{ l.get_cor_display }}"></div>
             <div class="d-flex gap-2 align-items-center flex-wrap">
-              <label class="mb-0 fw-semibold" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}">Reserva na sala (contagem):</label>
+              <label class="mb-0 fw-semibold" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva na sala:</label>
               <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
               {# os botões usam o atributo form para enviar os formulários de troca (abaixo): não pode haver formulário dentro de formulário #}
               <div class="dropdown ms-auto">
@@ -64,7 +64,6 @@
           {% else %}
           <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% endif %}
-          <p class="text-body-secondary mb-2">Mudar a contagem aqui só corrige o número da sala (e fica no histórico). Para tirar do estoque, use <a href="{% url 'estoque' %}">Salas para reabastecer</a>.</p>
           <button class="btn btn-primary w-100">Salvar {{ i.nome }}</button>
         </form>
         {% for l in i.linhas %}

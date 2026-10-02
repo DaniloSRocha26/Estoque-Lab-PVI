@@ -61,3 +61,7 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 
 .table > :not(caption) > * > * { padding: .65rem .8rem; }
 .toast { font-size: 1.05rem; }
+
+/* o menu fixo no topo não pode cobrir a seção quando o link leva até ela */
+[id] { scroll-margin-top: 5rem; }
+html { scroll-behavior: smooth; }
