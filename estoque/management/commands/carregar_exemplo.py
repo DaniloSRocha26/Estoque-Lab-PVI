@@ -28,13 +28,13 @@ class Command(BaseCommand):
                                              estoque_unidade=estoque, estoque_minimo=minimo)
 
         konica = {
-            'preto': toner('Konica Toner Preto (exemplo)', 2, 2),
-            'ciano': toner('Konica Toner Ciano (exemplo)', 0, 2),
-            'magenta': toner('Konica Toner Magenta (exemplo)', 1, 2),
-            'amarelo': toner('Konica Toner Amarelo (exemplo)', 3, 2),
+            'preto': toner('Konica Toner Preto', 2, 2),
+            'ciano': toner('Konica Toner Ciano', 0, 2),
+            'magenta': toner('Konica Toner Magenta', 1, 2),
+            'amarelo': toner('Konica Toner Amarelo', 3, 2),
         }
-        epson_preto = toner('Epson Toner Preto (exemplo)', 5, 2)
-        residuo_konica = Consumivel.objects.create(nome='Konica Caixa de resíduo (exemplo)',
+        epson_preto = toner('Epson Toner Preto', 5, 2)
+        residuo_konica = Consumivel.objects.create(nome='Konica Caixa de resíduo',
                                                    tipo='residuo', estoque_unidade=1, estoque_minimo=2)
 
         modelo_konica = ModeloImpressora.objects.create(nome='Konica Minolta', tipo='laser colorida',

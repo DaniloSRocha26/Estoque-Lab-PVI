@@ -10,7 +10,7 @@
   {% for c in consumiveis %}
   <div class="col-md-6 col-xl-4">
     <div class="card h-100"><div class="card-body">
-      <div class="fs-6 fw-bold">{{ c.nome }}</div>
+      <div class="fs-6 fw-bold">{% if c.cor %}<span class="ponto cor-{{ c.cor }}" title="{{ c.cor_nome }}"></span> {% endif %}{{ c.nome }}</div>
       <div class="mb-2">{{ c.get_tipo_display }} · ideal: pelo menos {{ c.estoque_minimo }}</div>
       {% if pode_editar %}
       <form class="d-flex gap-2 align-items-center flex-wrap" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>

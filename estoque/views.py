@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .acesso import somente_admin
-from .models import Consumivel, Impressora, Pedido
+from .models import CORES, Consumivel, Impressora, ModeloToner, Pedido
 from .services import (STATUS_EM_ANDAMENTO, calcular_alertas, impressoras_com_niveis,
                        mudar_status_pedido)
 
@@ -25,6 +25,10 @@ def _contexto_base():
     """Dados do aviso geral, usados no topo das páginas Estoque e Impressoras."""
     impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
+    cor_do_item = dict(ModeloToner.objects.order_by('-id').values_list('consumivel_id', 'cor'))
+    for c in consumiveis:
+        c.cor = cor_do_item.get(c.id)  # só toners ligados a um modelo têm cor
+        c.cor_nome = dict(CORES).get(c.cor)
     alertas = calcular_alertas(impressoras)
     return {
         'impressoras': impressoras,

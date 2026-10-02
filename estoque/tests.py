@@ -339,3 +339,17 @@ class DivisaoDePaginasTests(TestCase):
         self.assertRedirects(r, '/impressoras/')
         r = self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 4})
         self.assertRedirects(r, '/')
+
+
+class CorNoEstoqueTests(TestCase):
+    def test_toner_do_modelo_mostra_bolinha_e_residuo_nao(self):
+        ciano = _toner('Toner Ciano')
+        residuo = Consumivel.objects.create(nome='Caixa X', tipo='residuo')
+        modelo = ModeloImpressora.objects.create(nome='Konica', tipo='laser colorida',
+                                                 caixa_residuo=residuo)
+        ModeloToner.objects.create(modelo=modelo, cor='ciano', consumivel=ciano)
+        r = self.client.get('/')
+        itens = {c.nome: c for c in r.context['consumiveis']}
+        self.assertEqual(itens['Toner Ciano'].cor, 'ciano')
+        self.assertIsNone(itens['Caixa X'].cor)
+        self.assertContains(r, 'ponto cor-ciano')
