@@ -209,11 +209,17 @@ class AcessoTests(DjangoTestCase):
         self.visualizador = _usuario('ana', 'visualizador')
         self.admin = _usuario('chefe', 'admin')
 
-    def test_anonimo_vai_para_o_login(self):
-        for url in ('/', '/pedidos/', '/cadastros/'):
+    def test_anonimo_consulta_sem_controles(self):
+        for url in ('/', '/pedidos/'):
             r = self.client.get(url)
-            self.assertEqual(r.status_code, 302)
-            self.assertIn('/entrar/', r['Location'])
+            self.assertEqual(r.status_code, 200)
+            self.assertNotContains(r, 'data-ajax')
+            self.assertContains(r, 'Entrar para editar')
+
+    def test_anonimo_nao_acessa_cadastros(self):
+        r = self.client.get('/cadastros/')
+        self.assertEqual(r.status_code, 302)
+        self.assertIn('/entrar/', r['Location'])
 
     def test_anonimo_nao_altera_nada(self):
         r = self.client.post(f'/consumiveis/{self.toner.id}/atualizar/', {'estoque_unidade': 99})
@@ -251,11 +257,15 @@ class AcessoTests(DjangoTestCase):
         self.toner.refresh_from_db()
         self.assertEqual(self.toner.estoque_unidade, 7)
 
+    def test_login_volta_para_a_pagina_de_origem(self):
+        r = self.client.post('/entrar/?next=/pedidos/', {'username': 'chefe', 'password': 'SenhaForte#2026'})
+        self.assertRedirects(r, '/pedidos/')
+
     def test_login_e_logout(self):
         r = self.client.post('/entrar/', {'username': 'ana', 'password': 'SenhaForte#2026'})
         self.assertRedirects(r, '/')
         self.client.post('/sair/')
-        self.assertEqual(self.client.get('/').status_code, 302)
+        self.assertEqual(self.client.get('/cadastros/').status_code, 302)
 
     def test_senha_errada_nao_entra(self):
         r = self.client.post('/entrar/', {'username': 'ana', 'password': 'errada'})

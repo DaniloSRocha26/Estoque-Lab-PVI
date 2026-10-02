@@ -22,7 +22,6 @@
       <a class="navbar-brand fw-semibold" href="{% url 'painel' %}">
         <i class="bi bi-printer-fill text-primary"></i> Controle de Toner
       </a>
-      {% if user.is_authenticated %}
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'painel' %}active{% endif %}" href="{% url 'painel' %}">Painel</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'pedidos' %}active{% endif %}" href="{% url 'pedidos' %}">Pedidos</a></li>
@@ -30,6 +29,7 @@
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'cadastros' %}active{% endif %}" href="{% url 'cadastros' %}">Cadastros</a></li>
         {% endif %}
       </ul>
+      {% if user.is_authenticated %}
       <span class="small text-body-secondary me-2 d-none d-md-inline">
         {{ user.get_full_name|default:user.username }} · {% if pode_editar %}Admin{% else %}Somente consulta{% endif %}
       </span>
@@ -37,7 +37,10 @@
         <button class="btn btn-outline-secondary btn-sm" title="Sair"><i class="bi bi-box-arrow-right"></i> Sair</button>
       </form>
       {% else %}
-      <div class="me-auto"></div>
+      <span class="small text-body-secondary me-2 d-none d-md-inline">Somente consulta</span>
+      {% if request.resolver_match.url_name != 'login' %}
+      <a class="btn btn-primary btn-sm me-2" href="{% url 'login' %}?next={{ request.path|urlencode }}"><i class="bi bi-pencil-square"></i> Entrar para editar</a>
+      {% endif %}
       {% endif %}
       <button id="alternar-tema" class="btn btn-outline-secondary btn-sm" type="button" title="Alternar tema">
         <i class="bi bi-circle-half"></i>

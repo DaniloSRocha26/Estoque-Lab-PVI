@@ -131,7 +131,7 @@ MAILERS = {
 # Login
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'painel'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'painel'
 
 # Testes mais rápidos: hash simples só ao rodar "manage.py test"
 import sys

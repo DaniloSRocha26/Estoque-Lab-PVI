@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -22,7 +21,6 @@ def _inteiro(valor, minimo=0, maximo=None):
     return numero
 
 
-@login_required
 def painel(request):
     impressoras = impressoras_com_niveis()
     consumiveis = list(Consumivel.objects.order_by('tipo', 'nome'))
@@ -86,7 +84,6 @@ def atualizar_consumivel(request, pk):
     return redirect('painel')
 
 
-@login_required
 def pedidos(request):
     return render(request, 'estoque/pedidos.html', {
         'pedidos': Pedido.objects.select_related('consumivel').order_by('-criado_em'),
