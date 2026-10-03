@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -7,7 +8,7 @@ from .acesso import somente_admin
 from .forms import (ConsumivelEditarForm, ConsumivelNovoForm, ImpressoraForm, ModeloNomeForm,
                     ModeloNovoForm)
 from .models import Consumivel, Impressora, ModeloImpressora
-from .services import criar_modelo
+from .services import ValorMudou, ajustar_estoque, criar_modelo, mudar_modelo
 from .usuarios import listar_usuarios
 
 
@@ -57,7 +58,18 @@ def impressora_criar(request):
 @require_POST
 def impressora_editar(request, pk):
     obj = get_object_or_404(Impressora, pk=pk)
-    _salvar(request, ImpressoraForm(request.POST, instance=obj), f'{obj.nome} atualizada.')
+    form = ImpressoraForm(request.POST, instance=obj)
+    if not form.is_valid():
+        _erros(request, form)
+        return redirect('cadastros')
+    with transaction.atomic():
+        # o modelo passa por mudar_modelo, que devolve ao estoque a reserva que não serve mais
+        form.save(commit=False).save(update_fields=['nome', 'numero_serie', 'localizacao'])
+        devolvidos = mudar_modelo(obj.id, form.cleaned_data['modelo'], request.user)
+    mensagem = f'{obj.nome} atualizada.'
+    if devolvidos:
+        mensagem += ' Voltaram ao estoque: ' + ', '.join(devolvidos) + '.'
+    messages.success(request, mensagem)
     return redirect('cadastros')
 
 
@@ -112,7 +124,21 @@ def consumivel_criar(request):
 @require_POST
 def consumivel_editar(request, pk):
     obj = get_object_or_404(Consumivel, pk=pk)
-    _salvar(request, ConsumivelEditarForm(request.POST, instance=obj), f'{obj.nome} atualizado.')
+    form = ConsumivelEditarForm(request.POST, instance=obj)
+    if not form.is_valid():
+        _erros(request, form)
+        return redirect('cadastros')
+    original = request.POST.get('orig_estoque_unidade', '')
+    try:
+        with transaction.atomic():
+            form.save(commit=False).save(update_fields=['nome', 'estoque_minimo'])
+            ajustar_estoque(obj.id, form.cleaned_data['estoque_unidade'], request.user,
+                            int(original) if original.isdigit() else None)
+    except ValorMudou:
+        messages.error(request, f'Outra pessoa mudou o estoque de {obj.nome} enquanto você editava. '
+                                'Confira o número novo e salve de novo.')
+    else:
+        messages.success(request, f'{obj.nome} atualizado.')
     return redirect('cadastros')
 
 

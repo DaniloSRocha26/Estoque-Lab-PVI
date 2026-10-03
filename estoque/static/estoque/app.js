@@ -167,7 +167,12 @@
     var form = e.target;
     if (!form.matches('form[data-ajax]')) return;
     e.preventDefault();
+    if (form.classList.contains('salvando')) return; // ainda enviando: evita registrar duas vezes
     if (form.dataset.confirmar && !confirm(form.dataset.confirmar)) return;
+    var cancelando = form.elements.status && form.elements.status.value === 'cancelado';
+    if (form.dataset.confirmarCancelar && cancelando && !confirm(form.dataset.confirmarCancelar)) return;
+    var trocandoModelo = form.elements.modelo && form.elements.modelo.value !== form.dataset.modeloAtual;
+    if (form.dataset.confirmarModelo && trocandoModelo && !confirm(form.dataset.confirmarModelo)) return;
     form.classList.add('salvando');
 
     fetch(form.action, {

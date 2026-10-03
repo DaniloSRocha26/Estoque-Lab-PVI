@@ -1,17 +1,20 @@
 from django.contrib import messages
-from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .acesso import somente_admin
-from .models import (CORES, ORDEM_CORES, Consumivel, Impressora, ModeloToner, NivelToner, Pedido,
-                     AjusteReserva, Reposicao, Troca)
+from .models import (CORES, ORDEM_CORES, AjusteEstoque, AjusteReserva, Consumivel, Impressora,
+                     ModeloToner, NivelToner, Pedido, Reposicao, Troca)
 from .niveis import NIVEL_BAIXO
-from .services import (STATUS_EM_ANDAMENTO, SemEstoque, SemReserva, calcular_alertas,
-                       impressoras_com_niveis, mudar_status_pedido, repor_na_sala, repor_tudo,
-                       salas_para_reabastecer, trocar_toner)
+from .services import (STATUS_EM_ANDAMENTO, SemEstoque, SemReserva, ValorMudou, ajustar_estoque,
+                       atualizar_contagem, calcular_alertas, impressoras_com_niveis,
+                       mudar_status_pedido, repor_na_sala, repor_tudo, salas_para_reabastecer,
+                       trocar_toner)
 
+LIMITE_HISTORICO = 300
+MENSAGEM_VALOR_MUDOU = ('Outra pessoa mudou {} enquanto você editava. A tela foi atualizada com os '
+                        'números novos: confira e salve de novo.')
 
 
 def _inteiro(valor, minimo=0, maximo=None):
@@ -22,6 +25,11 @@ def _inteiro(valor, minimo=0, maximo=None):
     if numero < minimo or (maximo is not None and numero > maximo):
         return None
     return numero
+
+
+def _enviado_e_original(post, campo, maximo=None):
+    """(valor enviado, valor que estava na tela). O original vem no campo oculto "orig_<campo>"."""
+    return _inteiro(post.get(campo), 0, maximo), _inteiro(post.get(f'orig_{campo}'), 0, maximo)
 
 
 def _contexto_base():
@@ -68,34 +76,19 @@ def pagina_impressoras(request):
 @require_POST
 def atualizar_impressora(request, pk):
     impressora = get_object_or_404(Impressora, pk=pk)
-    residuo = _inteiro(request.POST.get('residuo_na_sala'))
-    novos, ajustes = [], []
-    for linha in impressora.niveis.all():
-        nivel = _inteiro(request.POST.get(f'nivel_{linha.cor}'), 0, 100)
-        na_sala = _inteiro(request.POST.get(f'sala_{linha.cor}'))
-        if nivel is None or na_sala is None:
-            residuo = None
-            break
-        if na_sala != linha.na_sala:
-            ajustes.append(('Toner ' + linha.get_cor_display(), linha.cor, linha.na_sala, na_sala))
-        linha.nivel, linha.na_sala = nivel, na_sala
-        novos.append(linha)
+    niveis = {cor: (_enviado_e_original(request.POST, f'nivel_{cor}', 100),
+                    _enviado_e_original(request.POST, f'sala_{cor}'))
+              for cor in impressora.niveis.values_list('cor', flat=True)}
+    residuo = _enviado_e_original(request.POST, 'residuo_na_sala')
 
-    if residuo is None:
+    if residuo[0] is None or any(n[0] is None or s[0] is None for n, s in niveis.values()):
         messages.error(request, 'Valores inválidos. O nível deve ficar entre 0 e 100.')
+        return redirect('impressoras')
+    try:
+        atualizar_contagem(impressora.id, niveis, residuo, request.user)
+    except ValorMudou:
+        messages.error(request, MENSAGEM_VALOR_MUDOU.format(f'a {impressora.nome}'))
     else:
-        if residuo != impressora.residuo_na_sala:
-            ajustes.append(('Caixa de resíduo', '', impressora.residuo_na_sala, residuo))
-        with transaction.atomic():
-            for linha in novos:
-                linha.save(update_fields=['nivel', 'na_sala'])
-            impressora.residuo_na_sala = residuo
-            impressora.save(update_fields=['residuo_na_sala'])
-            for descricao, cor, anterior, novo in ajustes:  # contagem corrigida à mão fica registrada
-                AjusteReserva.objects.create(
-                    impressora=impressora, impressora_nome=impressora.nome, descricao=descricao,
-                    cor=cor, anterior=anterior, novo=novo, usuario=request.user,
-                    usuario_nome=request.user.get_full_name() or request.user.get_username())
         messages.success(request, f'{impressora.nome} atualizada.')
     return redirect('impressoras')
 
@@ -104,12 +97,15 @@ def atualizar_impressora(request, pk):
 @require_POST
 def atualizar_consumivel(request, pk):
     consumivel = get_object_or_404(Consumivel, pk=pk)
-    estoque = _inteiro(request.POST.get('estoque_unidade'))
+    estoque, original = _enviado_e_original(request.POST, 'estoque_unidade')
     if estoque is None:
         messages.error(request, 'Quantidade inválida.')
+        return redirect('estoque')
+    try:
+        ajustar_estoque(consumivel.id, estoque, request.user, original)
+    except ValorMudou:
+        messages.error(request, MENSAGEM_VALOR_MUDOU.format(f'o estoque de {consumivel.nome}'))
     else:
-        consumivel.estoque_unidade = estoque
-        consumivel.save(update_fields=['estoque_unidade'])
         messages.success(request, f'Estoque de {consumivel.nome} atualizado.')
     return redirect('estoque')
 
@@ -119,6 +115,7 @@ def pedidos(request):
         'pedidos': Pedido.objects.select_related('consumivel').order_by('-criado_em'),
         'consumiveis': Consumivel.objects.order_by('tipo', 'nome'),
         'status_opcoes': Pedido.STATUS,
+        'status_finais': Pedido.FINAIS,
     })
 
 
@@ -149,7 +146,7 @@ def status_pedido(request, pk):
     if novo not in dict(Pedido.STATUS):
         messages.error(request, 'Status inválido.')
     else:
-        pedido = mudar_status_pedido(pk, novo)
+        pedido = mudar_status_pedido(get_object_or_404(Pedido, pk=pk).pk, novo, request.user)
         messages.success(request, f'Pedido atualizado para "{pedido.get_status_display()}".')
     return redirect('pedidos')
 
@@ -214,20 +211,24 @@ def repor_tudo_view(request):
 
 
 def pagina_historico(request):
-    trocas = Troca.objects.select_related('impressora')
-    reposicoes = Reposicao.objects.select_related('impressora')
-    ajustes = AjusteReserva.objects.select_related('impressora')
+    listas = {
+        'trocas': Troca.objects.all(),
+        'reposicoes': Reposicao.objects.all(),
+        'ajustes': AjusteReserva.objects.all(),
+        'ajustes_estoque': AjusteEstoque.objects.all(),
+    }
     escolhida = request.GET.get('impressora', '')
     if escolhida.isdigit():
-        trocas = trocas.filter(impressora_id=int(escolhida))
-        reposicoes = reposicoes.filter(impressora_id=int(escolhida))
-        ajustes = ajustes.filter(impressora_id=int(escolhida))
+        for chave in ('trocas', 'reposicoes', 'ajustes'):
+            listas[chave] = listas[chave].filter(impressora_id=int(escolhida))
+        listas['ajustes_estoque'] = listas['ajustes_estoque'].none()  # não são de uma impressora
     else:
         escolhida = ''
-    return render(request, 'estoque/historico.html', {
-        'trocas': trocas[:300],
-        'reposicoes': reposicoes[:300],
-        'ajustes': ajustes[:300],
+    contexto = {chave: qs[:LIMITE_HISTORICO] for chave, qs in listas.items()}
+    contexto.update({
+        'totais': {chave: qs.count() for chave, qs in listas.items()},
+        'limite': LIMITE_HISTORICO,
         'impressoras': Impressora.objects.order_by('nome'),
         'escolhida': escolhida,
     })
+    return render(request, 'estoque/historico.html', contexto)

@@ -37,10 +37,12 @@
         <td>{{ p.solicitante }}</td>
         <td>{{ p.observacao }}</td>
         <td>
-          {% if p.status == 'recebido' or not pode_editar %}
-            <span class="badge {% if p.status == 'recebido' %}text-bg-success{% elif p.status == 'enviado' %}text-bg-info{% else %}text-bg-warning{% endif %}">{{ p.get_status_display }}</span>
+          {% if p.status in status_finais or not pode_editar %}
+            <span class="badge {% if p.status == 'recebido' %}text-bg-success{% elif p.status == 'cancelado' %}text-bg-secondary{% elif p.status == 'enviado' %}text-bg-info{% else %}text-bg-warning{% endif %}">{{ p.get_status_display }}</span>
+            {% if p.finalizado_em %}<div class="small text-body-secondary text-nowrap">{{ p.finalizado_em|date:"d/m/Y H:i" }}{% if p.finalizado_por %} · {{ p.finalizado_por }}{% endif %}</div>{% endif %}
           {% else %}
-          <form class="d-flex gap-2" method="post" action="{% url 'status_pedido' p.id %}" data-ajax>
+          <form class="d-flex gap-2" method="post" action="{% url 'status_pedido' p.id %}" data-ajax
+                data-confirmar-cancelar="Cancelar este pedido? Depois de cancelado ele não pode mais ser alterado.">
             {% csrf_token %}
             <select class="form-select form-select-sm" name="status" style="width:8.5rem">
               {% for valor, rotulo in status_opcoes %}
@@ -59,5 +61,5 @@
     </table>
   </div>
 </div>
-{% if pode_editar %}<p class="text-body-secondary small mt-2">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade e o pedido não pode mais ser alterado.</p>{% endif %}
+{% if pode_editar %}<p class="text-body-secondary small mt-2">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade. Use "Cancelado" para um pedido feito por engano ou que não vai chegar. Recebido e cancelado não podem mais ser alterados.</p>{% endif %}
 {% endblock %}

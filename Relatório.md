@@ -3,7 +3,7 @@
 Situação do projeto, regras de negócio adotadas, o que falta e ideias para o futuro.
 O planejamento original está em [project-1.md](project-1.md).
 
-Última atualização deste relatório: 02/10/2026.
+Última atualização deste relatório: 03/10/2026.
 
 ---
 
@@ -34,11 +34,14 @@ O sistema ainda **não está no ar**: roda apenas no computador de desenvolvimen
 ### Funcionalidades
 - **Toner por cor:** a Konica tem 4 toners (preto, ciano, magenta, amarelo) e a Epson só o preto. Cada cor tem nível, reserva na sala e toner próprio no estoque.
 - **Cadastro simplificado:** ao criar um modelo, o sistema cria sozinho os toners de cada cor e a caixa de resíduo. Ao criar uma impressora, os níveis por cor aparecem automaticamente.
-- **Alerta "O que pedir":** aparece quando o estoque do item está abaixo do mínimo e há impressora sem reserva na sala. A quantidade sugerida é o mínimo menos o estoque (no mínimo 1). Se já existe pedido pendente ou enviado, mostra "pedido já feito".
-- **Pedidos:** pendente, enviado, recebido. Ao marcar como recebido, a quantidade soma no estoque (uma única vez).
+- **Alerta "O que pedir":** aparece quando o estoque do item está abaixo do mínimo e há impressora sem reserva na sala. A quantidade sugerida cobre a reposição das salas **e** ainda deixa o mínimo no estoque: `mínimo + falta nas salas − estoque − já pedido` (no mínimo 1). Se os pedidos pendentes ou enviados já cobrem isso, mostra "pedido já feito"; se não cobrem, sugere pedir o resto.
+- **Pedidos:** pendente, enviado, recebido ou cancelado. Ao marcar como recebido, a quantidade soma no estoque (uma única vez). Recebido e cancelado são finais e guardam quando e quem finalizou.
 - **Troquei o toner:** em cada cor, com duas origens: *usei a reserva da sala* ou *peguei do estoque*. O nível volta a 100% e a troca vai para o histórico.
 - **Repor na sala / Salas para reabastecer:** passa do estoque para a reserva da sala o que falta para chegar à reserva ideal. Há botão por linha e **Repor tudo** (repõe o que o estoque alcança e deixa o resto na lista).
 - **Contagem manual da reserva:** continua editável no card; cada mudança fica registrada em "Ajustes de contagem" (de X para Y) e **não** mexe no estoque.
+- **Correção manual do estoque:** fica registrada em "Ajustes de estoque" (na página Estoque e em Cadastros).
+- **Trocar o modelo de uma impressora** (Cadastros): pede confirmação. Em cada cor e na caixa de resíduo, se o modelo novo usa o mesmo item, a reserva continua; se usa outro, a reserva da sala **volta para o estoque** do item antigo (registrado em "Ajustes de contagem" e "Ajustes de estoque") e a cor recomeça com nível 100% e reserva 0.
+- **Duas pessoas editando ao mesmo tempo:** o card só grava os números que a pessoa mudou. Se outra pessoa mudou o **mesmo** número nesse meio-tempo, o sistema recusa e pede para conferir, em vez de apagar a mudança do outro.
 - **"Atualizado há…":** em cada impressora e item de estoque. Impressora sem conferência há mais de 7 dias aparece em vermelho ("confira os níveis").
 - **Atualização automática:** a página recarrega os dados a cada minuto, mas **não atualiza** se houver campo alterado e não salvo, se a pessoa estiver digitando há menos de 30 segundos, se um menu estiver aberto ou se a aba estiver em segundo plano.
 - **Visual:** Bootstrap, letras e botões grandes, estado sempre escrito em palavras (Baixo, Médio, Bom), tema claro por padrão com botão para o escuro, edição sem recarregar a página.
@@ -93,26 +96,27 @@ python manage.py runserver
 ### 5.1 Deploy (Fase 3)
 - [ ] Escolher a hospedagem (sugestão: **Render**; alternativas: Railway ou PythonAnywhere).
 - [ ] Trocar o SQLite por **PostgreSQL** em produção.
-- [ ] Configurar por **variáveis de ambiente**: `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`, banco de dados.
-  Hoje o `config/settings.py` tem `SECRET_KEY` fixa, `DEBUG = True` e `ALLOWED_HOSTS = []`: **não serve para produção**.
+- [x] Ler a configuração de **variáveis de ambiente**: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=0`, `DJANGO_ALLOWED_HOSTS` (separados por vírgula). Sem elas, roda em modo de desenvolvimento.
+- [ ] **Gerar uma `DJANGO_SECRET_KEY` nova** para produção: a chave de desenvolvimento está no histórico do git.
+- [ ] Banco de dados por variável de ambiente (PostgreSQL).
+- [ ] Limitar tentativas de login (por exemplo `django-axes`): com a consulta aberta, a senha é a única barreira.
 - [ ] Servir arquivos estáticos em produção (por exemplo WhiteNoise) e usar um servidor de aplicação (por exemplo gunicorn).
 - [ ] Ativar HTTPS e os cookies seguros (`SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`).
 - [ ] Definir **backup** do banco. O `db.sqlite3` não vai para o GitHub (está no `.gitignore`).
-- [ ] Decidir se os dados de teste atuais vão para o servidor ou se o banco começa vazio.
+- [x] Decidido (03/10/2026): o banco de produção **começa vazio**.
 
 ### 5.2 Dados reais
 - [ ] Cadastrar as impressoras reais, os modelos, os toners e as caixas de resíduo.
 - [ ] Definir o **estoque mínimo** de cada item.
-- [ ] Excluir os dados de teste (Konica Recepção, Konica Laboratório, Epson Sala 2, Epson Secretaria e os itens ligados a elas).
 - [ ] Criar as contas dos administradores (a previsão é de 2 pessoas).
 
 ### 5.3 Decisões pendentes
-- [ ] **Perfil "Operador"** para quem troca o toner no sábado sem acesso ao estoque: só registraria a troca, sem editar estoque nem cadastros. Alternativa: essas pessoas só avisam e o admin registra depois. Sem isso, o sistema fica desatualizado até o registro.
+- [ ] **Adiado (03/10/2026): o perfil "Operador" não será feito por enquanto.** Descrição original: para quem troca o toner no sábado sem acesso ao estoque: só registraria a troca, sem editar estoque nem cadastros. Alternativa: essas pessoas só avisam e o admin registra depois. Sem isso, o sistema fica desatualizado até o registro.
 - [ ] Manter ou remover o perfil **Visualizador**, já que a consulta é aberta.
 - [ ] Tornar os **limites configuráveis pela tela** (hoje 25%, 55% e reserva 1 ficam no código).
 
 ### 5.4 Verificações recomendadas
-- [ ] **Conferir a interface no navegador e no celular.** Os 76 testes automáticos cobrem o servidor (regras, permissões e páginas), mas **não cobrem o JavaScript** (atualização automática, controle deslizante ao vivo, menus). Esses pontos foram escritos, mas não foram testados em um navegador real.
+- [ ] **Conferir a interface no navegador e no celular.** Os 102 testes automáticos cobrem o servidor (regras, permissões e páginas), mas **não cobrem o JavaScript** (atualização automática, controle deslizante ao vivo, menus). Esses pontos foram escritos, mas não foram testados em um navegador real.
 - [ ] A interface carrega Bootstrap e ícones por **CDN**: precisa de internet. Se a unidade tiver rede restrita, trazer esses arquivos para dentro do projeto.
 
 ---
@@ -129,7 +133,6 @@ python manage.py runserver
 | **Aviso automático** (e-mail) de impressora com nível baixo ou sala sem reserva | |
 | **Preenchimento do controle deslizante na cor do toner** | Hoje é azul para todas as cores |
 | **Unir barra e controle deslizante** em um só elemento | Deixaria o card ainda menor |
-| **Contagem do estoque com registro** de mudanças manuais (hoje só a reserva da sala registra) | |
 | **Observação por troca** (ex.: "papel enroscou") | |
 | **Registro de fotos ou etiquetas** das impressoras | Só se for útil na prática |
 
@@ -138,13 +141,14 @@ python manage.py runserver
 ## 7. Informações técnicas
 
 - **Stack:** Python 3.14, Django 6.1, SQLite (desenvolvimento), Bootstrap 5 e JavaScript puro.
-- **Testes:** `python manage.py test` (76 testes).
+- **Testes:** `python manage.py test` (102 testes).
 - **Estrutura principal**
-  - `estoque/models.py`: dados (Consumivel, ModeloImpressora, ModeloToner, Impressora, NivelToner, Pedido, Troca, Reposicao, AjusteReserva)
+  - `estoque/models.py`: dados (Consumivel, ModeloImpressora, ModeloToner, Impressora, NivelToner, Pedido, Troca, Reposicao, AjusteReserva, AjusteEstoque)
   - `estoque/services.py`: regras (alertas, reposição, troca, pedidos)
   - `estoque/niveis.py`: limites e reserva ideal
   - `estoque/acesso.py` e `estoque/usuarios.py`: perfis e gestão de usuários
   - `estoque/views.py` e `estoque/cadastros.py`: telas
   - `estoque/templates/` e `estoque/static/`: visual e JavaScript
 - **Dados de exemplo (apenas desenvolvimento):** `python manage.py carregar_exemplo --limpar` (apaga tudo antes de carregar).
-- **Migrações:** 6 (a `0002` converte dados antigos de toner único para toner por cor).
+- **Migrações:** 8 (a `0002` converte dados antigos de toner único para toner por cor).
+- **Admin do Django (`/admin/`):** o histórico é somente leitura, e estoque, reservas e status de pedido não podem ser editados por lá (essas mudanças passam pelas telas, que registram tudo).

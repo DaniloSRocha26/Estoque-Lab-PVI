@@ -33,6 +33,9 @@
               <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
             </div>
             <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" style="--valor: {{ l.nivel }}%" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
+            {# o número que estava na tela: o servidor só grava o que você mudou e não apaga mudanças de outra pessoa #}
+            <input type="hidden" name="orig_nivel_{{ l.cor }}" value="{{ l.nivel }}">
+            <input type="hidden" name="orig_sala_{{ l.cor }}" value="{{ l.na_sala }}">
             <div class="d-flex gap-2 align-items-center">
               <label class="mb-0" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva:</label>
               <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
@@ -58,6 +61,7 @@
             <label class="mb-0" for="residuo-{{ aba }}-{{ i.id }}">Caixa de resíduo:</label>
             <input id="residuo-{{ aba }}-{{ i.id }}" class="form-control campo-pequeno" type="number" name="residuo_na_sala" min="0" value="{{ i.residuo_na_sala }}">
           </div>
+          <input type="hidden" name="orig_residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% else %}
           <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% endif %}

@@ -43,7 +43,8 @@ class AlertaETests(TestCase):
     def test_alerta_com_quantidade_sugerida(self):
         alertas = calcular_alertas()
         self.assertEqual(len(alertas), 1)
-        self.assertEqual(alertas[0]['quantidade_sugerida'], 3)
+        # mínimo 3 no estoque + 1 para repor a sala sem reserva
+        self.assertEqual(alertas[0]['quantidade_sugerida'], 4)
         self.assertFalse(alertas[0]['em_andamento'])
 
     def test_sem_alerta_se_ha_reserva_na_sala(self):

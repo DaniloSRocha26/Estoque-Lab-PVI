@@ -15,10 +15,14 @@
 </div>
 
 <ul class="nav nav-pills mb-3" role="tablist">
-  <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="pill" data-bs-target="#h-trocas" data-aba="h-trocas">Trocas de toner <span class="badge text-bg-secondary">{{ trocas|length }}</span></button></li>
-  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-reposicoes" data-aba="h-reposicoes">Reposições na sala <span class="badge text-bg-secondary">{{ reposicoes|length }}</span></button></li>
-  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-ajustes" data-aba="h-ajustes">Ajustes de contagem <span class="badge text-bg-secondary">{{ ajustes|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="pill" data-bs-target="#h-trocas" data-aba="h-trocas">Trocas de toner <span class="badge text-bg-secondary">{{ totais.trocas }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-reposicoes" data-aba="h-reposicoes">Reposições na sala <span class="badge text-bg-secondary">{{ totais.reposicoes }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-ajustes" data-aba="h-ajustes">Ajustes de contagem <span class="badge text-bg-secondary">{{ totais.ajustes }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="pill" data-bs-target="#h-estoque" data-aba="h-estoque">Ajustes de estoque <span class="badge text-bg-secondary">{{ totais.ajustes_estoque }}</span></button></li>
 </ul>
+{% if totais.trocas > limite or totais.reposicoes > limite or totais.ajustes > limite or totais.ajustes_estoque > limite %}
+<p class="text-body-secondary">Cada aba mostra os {{ limite }} registros mais recentes. Para ver mais antigos, filtre por impressora ou use o admin.</p>
+{% endif %}
 
 <div class="tab-content">
 
@@ -81,6 +85,27 @@
         </tr>
         {% empty %}
         <tr><td colspan="5" class="text-center text-body-secondary py-4">Nenhum ajuste registrado. Aparecem quando a contagem da reserva na sala é alterada à mão.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="h-estoque">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Quando</th><th>Item</th><th>Em estoque</th><th>Motivo</th><th>Quem</th></tr></thead>
+        <tbody>
+        {% for a in ajustes_estoque %}
+        <tr>
+          <td class="text-nowrap">{{ a.registrado_em|date:"d/m/Y H:i" }}</td>
+          <td>{{ a.item_nome }}</td>
+          <td>de <strong>{{ a.anterior }}</strong> para <strong>{{ a.novo }}</strong></td>
+          <td>{{ a.motivo|default:"Corrigido à mão" }}</td>
+          <td>{{ a.usuario_nome|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-body-secondary py-4">{% if escolhida %}Ajustes de estoque não são de uma impressora: escolha "Todas" para vê-los.{% else %}Nenhum ajuste registrado. Aparecem quando a quantidade do estoque da unidade é alterada à mão ou quando a troca de modelo de uma impressora devolve toners ao estoque.{% endif %}</td></tr>
         {% endfor %}
         </tbody>
       </table>

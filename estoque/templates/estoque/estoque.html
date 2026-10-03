@@ -19,6 +19,7 @@
         {% csrf_token %}
         <label class="mb-0 fw-semibold">Em estoque:</label>
         <input class="form-control campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Quantidade em estoque">
+        <input type="hidden" name="orig_estoque_unidade" value="{{ c.estoque_unidade }}">
         <button class="btn btn-primary">Salvar</button>
         {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% endif %}
       </form>
@@ -82,20 +83,21 @@
 <div class="row g-3 mb-5">
   {% for a in alertas %}
   <div class="col-lg-6">
-    <div class="card alerta-card {% if a.em_andamento %}andamento{% endif %} h-100">
+    <div class="card alerta-card {% if a.pedido_cobre %}andamento{% endif %} h-100">
       <div class="card-body">
-        {% if a.em_andamento %}
+        {% if a.pedido_cobre %}
           <div class="titulo"><i class="bi bi-truck text-warning"></i> {{ a.consumivel.nome }}</div>
           <div class="fs-6 fw-semibold mb-2">Pedido já feito, aguardando chegar.</div>
         {% else %}
-          <div class="titulo">Pedir {{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }}</div>
+          <div class="titulo">Pedir {% if a.em_andamento %}mais {% endif %}{{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }}</div>
           <div class="fs-6 fw-semibold mb-2">{{ a.consumivel.nome }}</div>
         {% endif %}
         <div class="mb-2">
-          Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }}).<br>
+          Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }} depois de repor as salas).<br>
           Sem reserva na sala: {{ a.afetadas|join:", " }}
+          {% if a.em_andamento and not a.pedido_cobre %}<br><i class="bi bi-truck"></i> Já pedido e ainda não chegou: {{ a.ja_pedido }} (não é suficiente).{% endif %}
         </div>
-        {% if pode_editar and not a.em_andamento %}
+        {% if pode_editar and not a.pedido_cobre %}
         <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
           {% csrf_token %}
           <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
