@@ -17,10 +17,25 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _carregar_env(arquivo):
+    """Lê CHAVE=valor do arquivo .env (fica só no servidor, fora do git) sem sobrescrever o ambiente."""
+    if not arquivo.exists():
+        return
+    for linha in arquivo.read_text(encoding='utf-8').splitlines():
+        linha = linha.strip()
+        if linha and not linha.startswith('#') and '=' in linha:
+            chave, valor = linha.split('=', 1)
+            os.environ.setdefault(chave.strip(), valor.strip())
+
+
+_carregar_env(BASE_DIR / '.env')
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# Em produção, defina DJANGO_SECRET_KEY, DJANGO_DEBUG=0 e DJANGO_ALLOWED_HOSTS (separados por vírgula).
+# Em produção, defina DJANGO_SECRET_KEY, DJANGO_DEBUG=0 e DJANGO_ALLOWED_HOSTS (separados por vírgula),
+# no ambiente ou no arquivo .env. O comando "manage.py preparar_producao" cria o .env (ver DEPLOY.md).
 # A chave abaixo já está no histórico do git: serve só para desenvolvimento, nunca para produção.
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
@@ -31,6 +46,19 @@ if not SECRET_KEY:
     SECRET_KEY = 'django-insecure-_!dw&5+x%xd1-*5#-9s+!vr-y#k0_^*=)$g&l-_g_x@8s74^y5'
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+CSRF_TRUSTED_ORIGINS = [f'https://{h}' for h in ALLOWED_HOSTS if not h.startswith('.')]
+
+if not DEBUG:
+    # o site em produção só funciona por HTTPS ("Force HTTPS" ligado no painel do PythonAnywhere)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+    SILENCED_SYSTEM_CHECKS = [
+        'security.W008',  # o redirecionamento para HTTPS é feito pelo PythonAnywhere, não pelo Django
+        # o site fica num subdomínio de pythonanywhere.com (que não é nosso) e a lista de "preload"
+        # dos navegadores não aceita subdomínio: estas duas opções do HSTS não se aplicam
+        'security.W005', 'security.W021',
+    ]
 
 
 # Application definition
@@ -123,15 +151,26 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # "manage.py collectstatic" junta os arquivos aqui para o servidor
 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
+# O sistema não envia e-mail. Em desenvolvimento, qualquer e-mail do Django só aparece no terminal.
+if DEBUG:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        },
+    }
+
+# Erros do servidor vão para o log de erros (no PythonAnywhere: aba Web → Error log)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'loggers': {'django': {'handlers': ['console'], 'level': 'WARNING'}},
 }
 
 # Login

@@ -94,16 +94,16 @@ python manage.py runserver
 ## 5. O que ainda falta
 
 ### 5.1 Deploy (Fase 3)
-- [ ] Escolher a hospedagem (sugestão: **Render**; alternativas: Railway ou PythonAnywhere).
-- [ ] Trocar o SQLite por **PostgreSQL** em produção.
-- [x] Ler a configuração de **variáveis de ambiente**: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=0`, `DJANGO_ALLOWED_HOSTS` (separados por vírgula). Sem elas, roda em modo de desenvolvimento.
-- [ ] **Gerar uma `DJANGO_SECRET_KEY` nova** para produção: a chave de desenvolvimento está no histórico do git.
-- [ ] Banco de dados por variável de ambiente (PostgreSQL).
-- [ ] Limitar tentativas de login (por exemplo `django-axes`): com a consulta aberta, a senha é a única barreira.
-- [ ] Servir arquivos estáticos em produção (por exemplo WhiteNoise) e usar um servidor de aplicação (por exemplo gunicorn).
-- [ ] Ativar HTTPS e os cookies seguros (`SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`).
-- [ ] Definir **backup** do banco. O `db.sqlite3` não vai para o GitHub (está no `.gitignore`).
+O passo a passo está em [DEPLOY.md](DEPLOY.md).
+- [x] Hospedagem escolhida (03/10/2026): **PythonAnywhere, plano gratuito**, na internet. O Render foi descartado porque o banco gratuito expira em 30 dias e o disco é apagado a cada atualização.
+- [x] Banco: **SQLite** no disco do servidor (no PythonAnywhere ele não se perde). PostgreSQL não é necessário.
+- [x] Configuração por `.env` no servidor, criado por `python manage.py preparar_producao --host ...` com chave secreta nova e `DEBUG` desligado.
+- [x] Produção: cookies seguros, HSTS, `CSRF_TRUSTED_ORIGINS`, `STATIC_ROOT` e erros no log. O `manage.py check --deploy` passa sem avisos.
+- [x] Backup: `python manage.py backup_banco` (manual, porque o plano gratuito não tem tarefas agendadas) e baixar o arquivo.
 - [x] Decidido (03/10/2026): o banco de produção **começa vazio**.
+- [x] Decidido (03/10/2026): **sem** limite de tentativas de login e **sem** identidade visual própria.
+- [ ] **Fazer o deploy** seguindo o DEPLOY.md.
+- [ ] Todo mês: clicar em "Run until 1 month from today" na aba Web, ou o site para.
 
 ### 5.2 Dados reais
 - [ ] Cadastrar as impressoras reais, os modelos, os toners e as caixas de resíduo.
@@ -116,7 +116,7 @@ python manage.py runserver
 - [ ] Tornar os **limites configuráveis pela tela** (hoje 25%, 55% e reserva 1 ficam no código).
 
 ### 5.4 Verificações recomendadas
-- [x] **Interface conferida no navegador (computador, tema claro e escuro)** em 03/10/2026, com prints e cliques automáticos no Edge. Os 105 testes automáticos cobrem o servidor; o JavaScript foi conferido no navegador.
+- [x] **Interface conferida no navegador (computador, tema claro e escuro)** em 03/10/2026, com prints e cliques automáticos no Edge. Os 109 testes automáticos cobrem o servidor; o JavaScript foi conferido no navegador.
 - **Celular: decidido não adaptar por enquanto** (03/10/2026). No celular, o menu do topo sai da largura da tela.
 - [ ] A interface carrega Bootstrap e ícones por **CDN**: precisa de internet. Se a unidade tiver rede restrita, trazer esses arquivos para dentro do projeto.
 
@@ -144,7 +144,7 @@ python manage.py runserver
 ## 7. Informações técnicas
 
 - **Stack:** Python 3.14, Django 6.1, SQLite (desenvolvimento), Bootstrap 5 e JavaScript puro.
-- **Testes:** `python manage.py test` (105 testes).
+- **Testes:** `python manage.py test` (109 testes).
 - **Estrutura principal**
   - `estoque/models.py`: dados (Consumivel, ModeloImpressora, ModeloToner, Impressora, NivelToner, Pedido, Troca, Reposicao, AjusteReserva, AjusteEstoque)
   - `estoque/services.py`: regras (alertas, reposição, troca, pedidos)
