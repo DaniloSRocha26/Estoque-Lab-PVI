@@ -37,9 +37,6 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 .card-impressora .nivel-texto { font-variant-numeric: tabular-nums; font-size: 1.1rem; }
 .card-impressora h3 { font-size: 1.2rem; font-weight: 700; }
 .linha-cor .nome-cor { font-size: 1.05rem; font-weight: 700; }
-.alerta-card { border-left: 6px solid var(--bs-danger); }
-.alerta-card.andamento { border-left-color: var(--bs-warning); }
-.alerta-card .titulo { font-size: 1.15rem; font-weight: 700; }
 .salvando { opacity: .6; pointer-events: none; }
 
 /* Controle deslizante com "pegador" grande */
@@ -131,3 +128,8 @@ form[data-sujo] .btn-salvar { background-color: var(--bs-primary); border-color:
 .icone-item { color: var(--bs-secondary-color); }
 .cabecalho-lista { font-weight: 700; padding: .4rem 0 .3rem; }
 [data-bs-theme="dark"] .btn-outline-primary { --bs-btn-color: #6ea8fe; --bs-btn-border-color: #6ea8fe; }
+
+/* ---------- O que pedir e Pedidos ---------- */
+.tabela-pedir tr.aguardando td { color: var(--bs-secondary-color); }
+.tabela-pedir .campo-pequeno { width: 5rem; }
+.tabela-finalizados td { color: var(--bs-secondary-color); }

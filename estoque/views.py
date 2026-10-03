@@ -41,6 +41,9 @@ def _contexto_base():
         c.cor = cor_do_item.get(c.id)  # só toners ligados a um modelo têm cor
         c.cor_nome = dict(CORES).get(c.cor)
     alertas = calcular_alertas(impressoras)
+    por_id = {c.id: c for c in consumiveis}
+    for a in alertas:  # usa o item já com a cor do toner, para a bolinha na tabela
+        a['consumivel'] = por_id.get(a['consumivel'].id, a['consumivel'])
     reabastecer = salas_para_reabastecer(impressoras)
     return {
         'impressoras': impressoras,
@@ -131,11 +134,13 @@ def atualizar_consumivel(request, pk):
 
 
 def pedidos(request):
+    todos = Pedido.objects.select_related('consumivel')
+    finalizados = todos.filter(status__in=Pedido.FINAIS).order_by('-finalizado_em', '-criado_em')
     return render(request, 'estoque/pedidos.html', {
-        'pedidos': Pedido.objects.select_related('consumivel').order_by('-criado_em'),
+        'a_caminho': todos.filter(status__in=STATUS_EM_ANDAMENTO).order_by('criado_em'),
+        'finalizados': finalizados[:LIMITE_HISTORICO],
+        'finalizados_total': finalizados.count(),
         'consumiveis': Consumivel.objects.order_by('tipo', 'nome'),
-        'status_opcoes': Pedido.STATUS,
-        'status_finais': Pedido.FINAIS,
     })
 
 

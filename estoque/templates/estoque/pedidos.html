@@ -2,64 +2,92 @@
 {% block titulo %}Pedidos · Controle de Toner{% endblock %}
 {% block auto %}1{% endblock %}
 {% block conteudo %}
-{% if pode_editar %}
-<h2 class="h5 mb-3"><i class="bi bi-plus-circle"></i> Novo pedido</h2>
-<form class="card card-body mb-4" method="post" action="{% url 'criar_pedido' %}" data-ajax>
-  {% csrf_token %}
-  <input type="hidden" name="voltar" value="pedidos">
-  <div class="row g-3 align-items-end">
-    <div class="col-md-3"><label class="form-label small mb-0">Item</label>
-      <select class="form-select form-select-sm" name="consumivel">
-        {% for c in consumiveis %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
-      </select></div>
-    <div class="col-md-2"><label class="form-label small mb-0">Quantidade</label>
-      <input class="form-control form-control-sm" type="number" name="quantidade" min="1" value="1"></div>
-    <div class="col-md-3"><label class="form-label small mb-0">Solicitante</label>
-      <input class="form-control form-control-sm" name="solicitante" value="{{ request.user.get_full_name|default:request.user.username }}" required></div>
-    <div class="col-md-3"><label class="form-label small mb-0">Observação</label>
-      <input class="form-control form-control-sm" name="observacao"></div>
-    <div class="col-md-1"><button class="btn btn-primary btn-sm w-100">Criar</button></div>
-  </div>
-</form>
 
-{% endif %}
-<h2 class="h5 mb-3"><i class="bi bi-list-check"></i> Pedidos</h2>
-<div class="card">
+{# ===== A caminho: o que ainda precisa de atenção ===== #}
+<h2 class="mb-3"><i class="bi bi-truck"></i> A caminho <span class="badge text-bg-secondary align-middle">{{ a_caminho|length }}</span></h2>
+<div class="card mb-2">
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead><tr><th>Data</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Status</th></tr></thead>
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Pedido em</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Status</th>{% if pode_editar %}<th class="text-end">Atualizar</th>{% endif %}</tr></thead>
       <tbody>
-      {% for p in pedidos %}
+      {% for p in a_caminho %}
       <tr>
         <td class="text-nowrap">{{ p.criado_em|date:"d/m/Y H:i" }}</td>
-        <td>{{ p.consumivel.nome }}</td>
-        <td>{{ p.quantidade }}</td>
+        <td class="fw-semibold">{{ p.consumivel.nome }}</td>
+        <td><strong class="fs-5">{{ p.quantidade }}</strong></td>
         <td>{{ p.solicitante }}</td>
-        <td>{{ p.observacao }}</td>
-        <td>
-          {% if p.status in status_finais or not pode_editar %}
-            <span class="badge {% if p.status == 'recebido' %}text-bg-success{% elif p.status == 'cancelado' %}text-bg-secondary{% elif p.status == 'enviado' %}text-bg-info{% else %}text-bg-warning{% endif %}">{{ p.get_status_display }}</span>
-            {% if p.finalizado_em %}<div class="small text-body-secondary text-nowrap">{{ p.finalizado_em|date:"d/m/Y H:i" }}{% if p.finalizado_por %} · {{ p.finalizado_por }}{% endif %}</div>{% endif %}
-          {% else %}
-          <form class="d-flex gap-2" method="post" action="{% url 'status_pedido' p.id %}" data-ajax
-                data-confirmar-cancelar="Cancelar este pedido? Depois de cancelado ele não pode mais ser alterado.">
+        <td>{{ p.observacao|default:"—" }}</td>
+        <td><span class="badge {% if p.status == 'enviado' %}text-bg-info{% else %}text-bg-warning{% endif %}">{{ p.get_status_display }}</span></td>
+        {% if pode_editar %}
+        <td class="text-end">
+          <form class="d-inline-flex gap-2" method="post" action="{% url 'status_pedido' p.id %}" data-ajax>
             {% csrf_token %}
-            <select class="form-select form-select-sm" name="status" style="width:8.5rem">
-              {% for valor, rotulo in status_opcoes %}
-              <option value="{{ valor }}" {% if valor == p.status %}selected{% endif %}>{{ rotulo }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn btn-outline-primary btn-sm">Atualizar</button>
+            {% if p.status == 'pendente' %}<button class="btn btn-outline-primary btn-sm" name="status" value="enviado">Enviado</button>{% endif %}
+            <button class="btn btn-success btn-sm" name="status" value="recebido"
+                    data-confirmar="Marcar como recebido? {{ p.quantidade }}x {{ p.consumivel.nome }} serão somados ao estoque da unidade. Isso não pode ser desfeito.">
+              <i class="bi bi-box-arrow-in-down"></i> Recebido</button>
+            <button class="btn btn-outline-danger btn-sm" name="status" value="cancelado"
+                    data-confirmar="Cancelar este pedido? Depois de cancelado ele não pode mais ser alterado.">Cancelar</button>
           </form>
-          {% endif %}
         </td>
+        {% endif %}
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="text-center text-body-secondary py-4">Nenhum pedido registrado.</td></tr>
+      <tr><td colspan="7" class="text-center text-body-secondary py-4">Nenhum pedido a caminho.</td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-{% if pode_editar %}<p class="text-body-secondary small mt-2">Ao marcar como "Recebido", a quantidade é somada ao estoque da unidade. Use "Cancelado" para um pedido feito por engano ou que não vai chegar. Recebido e cancelado não podem mais ser alterados.</p>{% endif %}
+{% if pode_editar %}<p class="dica mb-4">"Recebido" soma a quantidade no estoque da unidade. "Cancelar" serve para pedido feito por engano ou que não vai chegar.</p>{% endif %}
+
+{# ===== Novo pedido ===== #}
+{% if pode_editar %}
+<h2 class="mb-3"><i class="bi bi-plus-circle"></i> Novo pedido</h2>
+<form class="card card-body mb-5" method="post" action="{% url 'criar_pedido' %}" data-ajax>
+  {% csrf_token %}
+  <input type="hidden" name="voltar" value="pedidos">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3"><label class="form-label mb-0" for="novo-item">Item</label>
+      <select class="form-select" name="consumivel" id="novo-item">
+        {% for c in consumiveis %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label mb-0" for="novo-qtd">Quantidade</label>
+      <input class="form-control" type="number" name="quantidade" min="1" value="1" id="novo-qtd"></div>
+    <div class="col-md-3"><label class="form-label mb-0" for="novo-solicitante">Solicitante</label>
+      <input class="form-control" name="solicitante" id="novo-solicitante" value="{{ request.user.get_full_name|default:request.user.username }}" required></div>
+    <div class="col-md"><label class="form-label mb-0" for="novo-obs">Observação</label>
+      <input class="form-control" name="observacao" id="novo-obs"></div>
+    <div class="col-md-auto"><button class="btn btn-primary">Criar pedido</button></div>
+  </div>
+</form>
+{% endif %}
+
+{# ===== Finalizados: só consulta ===== #}
+<h2 class="mb-3"><i class="bi bi-archive"></i> Finalizados <span class="badge text-bg-secondary align-middle">{{ finalizados_total }}</span></h2>
+<div class="card tabela-finalizados">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Pedido em</th><th>Item</th><th>Qtd</th><th>Solicitante</th><th>Observação</th><th>Situação</th></tr></thead>
+      <tbody>
+      {% for p in finalizados %}
+      <tr>
+        <td class="text-nowrap">{{ p.criado_em|date:"d/m/Y H:i" }}</td>
+        <td>{{ p.consumivel.nome }}</td>
+        <td>{{ p.quantidade }}</td>
+        <td>{{ p.solicitante }}</td>
+        <td>{{ p.observacao|default:"—" }}</td>
+        <td>
+          <span class="badge {% if p.status == 'recebido' %}text-bg-success{% else %}text-bg-secondary{% endif %}">{{ p.get_status_display }}</span>
+          {% if p.finalizado_em %}<span class="text-body-secondary text-nowrap ms-1">{{ p.finalizado_em|date:"d/m/Y H:i" }}{% if p.finalizado_por %} · {{ p.finalizado_por }}{% endif %}</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-body-secondary py-4">Nenhum pedido finalizado ainda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if finalizados_total > finalizados|length %}<p class="dica mt-2">Mostrando os {{ finalizados|length }} mais recentes.</p>{% endif %}
 {% endblock %}

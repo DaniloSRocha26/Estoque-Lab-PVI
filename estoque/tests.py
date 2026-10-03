@@ -116,7 +116,7 @@ class CoresTests(TestCase):
         self.itens['ciano'].save()
         alertas = calcular_alertas()
         self.assertEqual([a['consumivel'].nome for a in alertas], ['Konica ciano'])
-        self.assertEqual(alertas[0]['afetadas'], ['K1 (Ciano (azul))'])
+        self.assertEqual(alertas[0]['afetadas'], ['K1'])
 
     def test_adicionar_cor_ao_modelo_cria_nivel_nas_impressoras(self):
         modelo = ModeloImpressora.objects.create(nome='Nova', tipo='mono')

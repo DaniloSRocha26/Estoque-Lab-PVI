@@ -45,9 +45,8 @@ def calcular_alertas(impressoras=None):
         for linha in imp.linhas:
             if linha.toner and linha.na_sala < RESERVA_IDEAL:
                 falta_nas_salas[linha.toner.id] += RESERVA_IDEAL - linha.na_sala
-            if linha.toner and linha.na_sala == 0:
-                rotulo = f'{imp.nome} ({linha.get_cor_display()})' if imp.colorida else imp.nome
-                sem_reserva[linha.toner.id].append(rotulo)
+            if linha.toner and linha.na_sala == 0:  # o item já é o toner da cor: basta a impressora
+                sem_reserva[linha.toner.id].append(imp.nome)
         residuo = imp.modelo.caixa_residuo
         if residuo and imp.residuo_na_sala < RESERVA_IDEAL:
             falta_nas_salas[residuo.id] += RESERVA_IDEAL - imp.residuo_na_sala

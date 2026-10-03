@@ -119,6 +119,14 @@ class PedidoCanceladoTests(NovasFuncoesBase):
         self.assertEqual(self.pedido.finalizado_por, 'admin_teste')
         self.assertContains(self.client.get('/pedidos/'), 'admin_teste')
 
+    def test_pagina_separa_a_caminho_e_finalizados(self):
+        recebido = Pedido.objects.create(consumivel=self.toner, quantidade=1, solicitante='Bia')
+        mudar_status_pedido(recebido.pk, 'recebido')
+        r = self.client.get('/pedidos/')
+        self.assertEqual(list(r.context['a_caminho']), [self.pedido])
+        self.assertEqual(list(r.context['finalizados']), [recebido])
+        self.assertContains(r, 'name="status" value="recebido"')
+
     def test_pedido_inexistente_da_404(self):
         self.assertEqual(self.client.post('/pedidos/999999/status/', {'status': 'enviado'}).status_code, 404)
 
@@ -143,12 +151,12 @@ class QuantidadeSugeridaTests(TestCase):
         alerta = self._alerta()
         self.assertEqual((alerta['em_andamento'], alerta['pedido_cobre'], alerta['quantidade_sugerida']),
                          (True, False, 3))
-        self.assertContains(self.client.get('/'), 'Pedir mais 3 unidades')
+        self.assertContains(self.client.get('/'), 'name="quantidade" min="1" value="3"')
 
     def test_pedido_que_basta_mostra_aguardando(self):
         Pedido.objects.create(consumivel=self.toner, quantidade=4, solicitante='Ana')
         self.assertTrue(self._alerta()['pedido_cobre'])
-        self.assertContains(self.client.get('/'), 'Pedido já feito, aguardando chegar.')
+        self.assertContains(self.client.get('/'), 'Pedido já feito, aguardando chegar')
 
 
 class AdminProtegeHistoricoTests(NovasFuncoesBase):

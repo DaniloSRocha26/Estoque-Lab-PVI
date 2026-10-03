@@ -86,42 +86,44 @@
 <div class="resumo-geral ok mb-5"><i class="bi bi-check-circle-fill"></i> Todas as salas têm a reserva ideal.</div>
 {% endif %}
 
-{# ===== Alertas ===== #}
+{# ===== O que pedir ===== #}
 {% if alertas %}
-<h2 class="mb-3" id="o-que-pedir"><i class="bi bi-cart-plus text-danger"></i> O que pedir</h2>
-<div class="row g-3 mb-5">
-  {% for a in alertas %}
-  <div class="col-lg-6">
-    <div class="card alerta-card {% if a.pedido_cobre %}andamento{% endif %} h-100">
-      <div class="card-body">
-        {% if a.pedido_cobre %}
-          <div class="titulo"><i class="bi bi-truck text-warning"></i> {{ a.consumivel.nome }}</div>
-          <div class="fs-6 fw-semibold mb-2">Pedido já feito, aguardando chegar.</div>
-        {% else %}
-          <div class="titulo">Pedir {% if a.em_andamento %}mais {% endif %}{{ a.quantidade_sugerida }} unidade{{ a.quantidade_sugerida|pluralize }}</div>
-          <div class="fs-6 fw-semibold mb-2">{{ a.consumivel.nome }}</div>
-        {% endif %}
-        <div class="mb-2">
-          Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }}{% if a.falta_nas_salas %} depois de repor as salas{% endif %}).<br>
-          {% if a.afetadas %}Sem reserva na sala: {{ a.afetadas|join:", " }}{% else %}As salas ainda têm reserva.{% endif %}
-          {% if a.em_andamento and not a.pedido_cobre %}<br><i class="bi bi-truck"></i> Já pedido e ainda não chegou: {{ a.ja_pedido }} (não é suficiente).{% endif %}
-        </div>
-        {% if pode_editar and not a.pedido_cobre %}
-        <form class="row g-2 align-items-end" method="post" action="{% url 'criar_pedido' %}" data-ajax>
-          {% csrf_token %}
-          <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
-          <input type="hidden" name="voltar" value="estoque">
-          <div class="col-auto"><label class="form-label mb-0">Quantidade</label>
-            <input class="form-control campo-pequeno" type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}"></div>
-          <div class="col"><label class="form-label mb-0">Quem está pedindo</label>
-            <input class="form-control" name="solicitante" value="{{ request.user.get_full_name|default:request.user.username }}" required></div>
-          <div class="col-auto"><button class="btn btn-danger">Criar pedido</button></div>
-        </form>
-        {% endif %}
-      </div>
-    </div>
+<h2 class="mb-2" id="o-que-pedir"><i class="bi bi-cart-plus text-danger"></i> O que pedir</h2>
+<p class="mb-2">Itens abaixo do mínimo ou sem estoque para repor as salas. A quantidade sugerida repõe as salas e ainda deixa o mínimo guardado.</p>
+<div class="card {% if pode_editar %}mb-2{% else %}mb-5{% endif %}">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0 tabela-pedir">
+      <thead><tr><th>Item</th><th>Em estoque</th><th>Mínimo</th><th>Salas sem reserva</th><th>Já pedido</th><th class="text-end">{% if pode_editar %}Pedir{% else %}Sugestão{% endif %}</th></tr></thead>
+      <tbody>
+      {% for a in alertas %}
+      <tr {% if a.pedido_cobre %}class="aguardando"{% endif %}>
+        <td class="fw-semibold">{% if a.consumivel.cor %}<span class="ponto cor-{{ a.consumivel.cor }}"></span> {% elif a.consumivel.tipo == 'residuo' %}<i class="bi bi-trash3 icone-item"></i> {% endif %}{{ a.consumivel.nome }}</td>
+        <td><strong class="{% if a.consumivel.estoque_unidade < a.consumivel.estoque_minimo %}text-danger{% endif %}">{{ a.consumivel.estoque_unidade }}</strong></td>
+        <td>{{ a.consumivel.estoque_minimo }}</td>
+        <td>{% if a.afetadas %}{{ a.afetadas|join:", " }}{% else %}<span class="text-body-secondary">nenhuma</span>{% endif %}</td>
+        <td class="text-nowrap">{% if a.ja_pedido %}<i class="bi bi-truck"></i> {{ a.ja_pedido }}{% else %}<span class="text-body-secondary">—</span>{% endif %}</td>
+        <td class="text-end">
+          {% if a.pedido_cobre %}
+          <span class="badge text-bg-info"><i class="bi bi-truck"></i> Pedido já feito, aguardando chegar</span>
+          {% elif pode_editar %}
+          <form class="d-inline-flex gap-2 align-items-center" method="post" action="{% url 'criar_pedido' %}" data-ajax>
+            {% csrf_token %}
+            <input type="hidden" name="consumivel" value="{{ a.consumivel.id }}">
+            <input type="hidden" name="voltar" value="estoque">
+            <input type="hidden" name="solicitante" value="{{ request.user.get_full_name|default:request.user.username }}">
+            <input class="form-control campo-pequeno" type="number" name="quantidade" min="1" value="{{ a.quantidade_sugerida }}" aria-label="Quantidade a pedir de {{ a.consumivel.nome }}">
+            <button class="btn btn-danger text-nowrap">Criar pedido</button>
+          </form>
+          {% else %}
+          <strong>{{ a.quantidade_sugerida }}</strong>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% endfor %}
 </div>
+{% if pode_editar %}<p class="dica mb-5">O pedido sai no seu nome. Para outro solicitante ou com observação, use a página <a href="{% url 'pedidos' %}">Pedidos</a>.</p>{% endif %}
 {% endif %}
 {% endblock %}

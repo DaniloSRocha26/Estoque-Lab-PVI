@@ -167,16 +167,18 @@
     if (!form.matches('form[data-ajax]')) return;
     e.preventDefault();
     if (form.classList.contains('salvando')) return; // ainda enviando: evita registrar duas vezes
-    if (form.dataset.confirmar && !confirm(form.dataset.confirmar)) return;
-    var cancelando = form.elements.status && form.elements.status.value === 'cancelado';
-    if (form.dataset.confirmarCancelar && cancelando && !confirm(form.dataset.confirmarCancelar)) return;
+    var botao = e.submitter; // o botão clicado pode ter a própria confirmação (ex.: Recebido, Cancelar)
+    var confirmar = (botao && botao.dataset.confirmar) || form.dataset.confirmar;
+    if (confirmar && !confirm(confirmar)) return;
     var trocandoModelo = form.elements.modelo && form.elements.modelo.value !== form.dataset.modeloAtual;
     if (form.dataset.confirmarModelo && trocandoModelo && !confirm(form.dataset.confirmarModelo)) return;
     form.classList.add('salvando');
+    var dados = new FormData(form);
+    if (botao && botao.name) dados.append(botao.name, botao.value); // FormData não inclui o botão clicado
 
     fetch(form.action, {
       method: 'POST',
-      body: new FormData(form),
+      body: dados,
       headers: { 'X-Requested-With': 'fetch' },
       credentials: 'same-origin'
     }).then(function (resp) {
