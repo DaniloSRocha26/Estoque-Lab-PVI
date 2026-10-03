@@ -16,6 +16,9 @@
     <input id="filtro-busca" class="form-control" type="search" placeholder="Buscar impressora" style="width:17rem">
   </div>
 </div>
+{% if pode_editar %}
+<p class="dica mb-3"><i class="bi bi-info-circle"></i> Mudar a contagem só corrige o número da sala. Para tirar do estoque, use <a href="{% url 'estoque' %}#salas-reabastecer">Salas para reabastecer</a>.</p>
+{% endif %}
 
 {% if grupos %}
 <ul class="nav nav-pills mb-3" role="tablist">

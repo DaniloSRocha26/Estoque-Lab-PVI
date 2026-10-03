@@ -1,6 +1,6 @@
 {% load humanize %}
   <div class="col-md-6 col-xl-4">
-    <div class="card card-impressora h-100 {% if i.sem_reserva_sala %}sem-reserva{% endif %}"
+    <div class="card card-impressora"
          data-nivel="{{ i.nivel_minimo }}"
          data-busca="{{ i.nome|lower }} {{ i.localizacao|lower }} {{ i.numero_serie|lower }} {{ i.modelo.nome|lower }}">
       <div class="card-body">
@@ -15,6 +15,7 @@
           {% if i.atualizado_em_nivel %}
           · <span class="{% if i.desatualizada %}text-danger fw-semibold{% endif %}" title="{{ i.atualizado_em_nivel|date:'d/m/Y H:i' }}"><i class="bi bi-clock-history"></i> {{ i.atualizado_em_nivel|naturaltime }}{% if i.desatualizada %} · confira os níveis{% endif %}</span>
           {% endif %}
+          {% if i.sem_reserva_sala %}· <span class="text-danger fw-semibold text-nowrap"><i class="bi bi-exclamation-circle-fill"></i> sala sem reserva</span>{% endif %}
         </div>
 
         {% if pode_editar %}
@@ -29,16 +30,13 @@
                 <strong class="nivel-texto" data-nivel-saida>{{ l.nivel }}%</strong>
               </span>
             </div>
-            <div class="progress mt-1" role="progressbar" aria-valuenow="{{ l.nivel }}" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar cor-{{ l.cor }}" style="width: {{ l.nivel }}%"></div>
-            </div>
-            <input class="form-range" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" style="--valor: {{ l.nivel }}%" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
+            <input class="form-range trilha-{{ l.cor }}" type="range" name="nivel_{{ l.cor }}" min="0" max="100" step="1" value="{{ l.nivel }}" style="--valor: {{ l.nivel }}%" data-nivel-range aria-label="Nível {{ l.get_cor_display }}">
             {# o número que estava na tela: o servidor só grava o que você mudou e não apaga mudanças de outra pessoa #}
             <input type="hidden" name="orig_nivel_{{ l.cor }}" value="{{ l.nivel }}">
             <input type="hidden" name="orig_sala_{{ l.cor }}" value="{{ l.na_sala }}">
             <div class="d-flex gap-2 align-items-center">
-              <label class="mb-0" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva:</label>
-              <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
+              <label class="mb-0 {% if l.na_sala == 0 %}text-danger fw-bold{% endif %}" for="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" title="Corrige só o número da sala. Para tirar do estoque, use Salas para reabastecer.">Reserva:</label>
+              <input id="sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" class="form-control campo-pequeno {% if l.na_sala == 0 %}reserva-zero{% endif %}" type="number" name="sala_{{ l.cor }}" min="0" value="{{ l.na_sala }}">
               {# os botões usam o atributo form para enviar os formulários de troca (abaixo): não pode haver formulário dentro de formulário #}
               <div class="dropdown ms-auto">
                 <button class="btn btn-outline-success btn-compacto dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -65,8 +63,7 @@
           {% else %}
           <input type="hidden" name="residuo_na_sala" value="{{ i.residuo_na_sala }}">
           {% endif %}
-          <div class="dica mb-2">Mudar a contagem só corrige o número da sala. Para tirar do estoque, use <a href="{% url 'estoque' %}#salas-reabastecer">Salas para reabastecer</a>.</div>
-          <button class="btn btn-primary w-100">Salvar</button>
+          <button class="btn btn-outline-primary w-100 btn-salvar">Salvar</button>
         </form>
         {% for l in i.linhas %}
         <form id="troca-sala-{{ aba }}-{{ i.id }}-{{ l.cor }}" method="post" action="{% url 'trocar_toner' i.id l.cor %}" data-ajax

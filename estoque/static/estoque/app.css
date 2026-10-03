@@ -35,7 +35,6 @@ h2, .h5 { font-size: 1.3rem !important; font-weight: 700; }
 /* ---------- Impressoras ---------- */
 .card-impressora .progress { height: 18px; border-radius: 6px; }
 .card-impressora .nivel-texto { font-variant-numeric: tabular-nums; font-size: 1.1rem; }
-.card-impressora.sem-reserva { border-color: var(--bs-warning); }
 .card-impressora h3 { font-size: 1.2rem; font-weight: 700; }
 .linha-cor .nome-cor { font-size: 1.05rem; font-weight: 700; }
 .alerta-card { border-left: 6px solid var(--bs-danger); }
@@ -85,3 +84,50 @@ html { scroll-behavior: smooth; }
   width: 1.5rem; height: 1.5rem; border: 3px solid #fff;
   box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
 }
+
+/* No card de quem edita, o controle deslizante é a própria barra do nível: trilha na cor do toner */
+.trilha-preto { --preenchido: #343a40; }
+.trilha-ciano { --preenchido: #0dcaf0; }
+.trilha-magenta { --preenchido: #d63384; }
+.trilha-amarelo { --preenchido: #ffc107; }
+[data-bs-theme="dark"] .trilha-preto { --preenchido: #dee2e6; }
+.card-impressora .form-range { height: 2rem; margin: .25rem 0 .4rem; }
+.card-impressora .form-range::-webkit-slider-runnable-track { height: 1.1rem; }
+.card-impressora .form-range::-moz-range-track, .card-impressora .form-range::-moz-range-progress { height: 1.1rem; }
+.card-impressora .form-range::-webkit-slider-thumb { width: 1.7rem; height: 1.7rem; margin-top: -.4rem; background-color: #fff; border-color: #495057; }
+.card-impressora .form-range::-moz-range-thumb { width: 1.7rem; height: 1.7rem; background-color: #fff; border-color: #495057; }
+.reserva-zero { border-color: var(--bs-danger) !important; }
+
+/* "Salvar" fica discreto e se destaca quando há mudança ainda não salva (o JS marca data-sujo) */
+form[data-sujo] .btn-salvar { background-color: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+
+/* "Troquei" legível no tema escuro */
+[data-bs-theme="dark"] .btn-outline-success { --bs-btn-color: #75b798; --bs-btn-border-color: #75b798; --bs-btn-hover-bg: #198754; --bs-btn-hover-border-color: #198754; }
+
+/* ---------- Resumo do topo: quatro números clicáveis ---------- */
+.resumo-geral.resumo-numeros { padding: 0; font-size: 1rem; }
+.resumo-item {
+  display: flex; align-items: center; gap: .75rem; height: 100%; padding: .85rem 1rem;
+  border: 2px solid var(--bs-border-color); border-radius: .6rem; background: var(--bs-body-bg);
+  color: var(--bs-body-color); text-decoration: none; transition: box-shadow .15s, transform .15s;
+}
+.resumo-item:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.12); transform: translateY(-1px); color: var(--bs-body-color); }
+.resumo-item .bi { font-size: 1.6rem; margin: 0; }
+.resumo-item .numero { font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.resumo-item .rotulo { font-weight: 600; line-height: 1.25; }
+.resumo-item.perigo { border-color: var(--bs-danger); background: var(--bs-danger-bg-subtle); }
+.resumo-item.perigo .bi, .resumo-item.perigo .numero { color: var(--bs-danger-text-emphasis); }
+.resumo-item.atencao { border-color: var(--bs-warning); background: var(--bs-warning-bg-subtle); }
+.resumo-item.atencao .bi, .resumo-item.atencao .numero { color: var(--bs-warning-text-emphasis); }
+.resumo-item.info { border-color: var(--bs-info); background: var(--bs-info-bg-subtle); }
+.resumo-item.info .bi, .resumo-item.info .numero { color: var(--bs-info-text-emphasis); }
+.resumo-item.ok .bi { color: var(--bs-success); }
+.resumo-item.ok .numero, .resumo-item.neutro .numero, .resumo-item.neutro .bi { color: var(--bs-secondary-color); }
+
+/* ---------- Tabela do estoque agrupada por modelo ---------- */
+.tabela-estoque .grupo th { background: var(--bs-tertiary-bg); font-size: 1.05rem; padding-top: .55rem; padding-bottom: .55rem; }
+.tabela-estoque thead th { white-space: nowrap; }
+.tabela-estoque .campo-pequeno { width: 5.5rem; }
+.icone-item { color: var(--bs-secondary-color); }
+.cabecalho-lista { font-weight: 700; padding: .4rem 0 .3rem; }
+[data-bs-theme="dark"] .btn-outline-primary { --bs-btn-color: #6ea8fe; --bs-btn-border-color: #6ea8fe; }

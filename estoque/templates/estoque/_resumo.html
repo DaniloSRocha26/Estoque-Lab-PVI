@@ -1,16 +1,33 @@
-{% if resumo.nivel_baixo or alertas or reabastecer %}
-<div class="resumo-geral atencao mb-4" role="status">
-  <i class="bi bi-exclamation-triangle-fill"></i> Atenção
-  <ul>
-    {% if resumo.nivel_baixo %}<li>{{ resumo.nivel_baixo }} impressora{{ resumo.nivel_baixo|pluralize }} com toner baixo.</li>{% endif %}
-    {% if reabastecer %}<li>{{ reabastecer|length }} {% if reabastecer|length == 1 %}item sem reserva na sala{% else %}itens sem reserva nas salas{% endif %} (veja <a href="{% url 'estoque' %}#salas-reabastecer">Salas para reabastecer</a>).</li>{% endif %}
-    {% if alertas %}<li>{{ alertas|length }} {% if alertas|length == 1 %}item{% else %}itens{% endif %} para pedir.</li>{% endif %}
-    {% if resumo.pedidos_abertos %}<li>{{ resumo.pedidos_abertos }} pedido{{ resumo.pedidos_abertos|pluralize }} em andamento.</li>{% endif %}
-  </ul>
+{# Resumo do topo: quatro números, cada um leva para onde se resolve. Zero aparece em verde. #}
+<div class="resumo-geral resumo-numeros mb-4" role="status">
+  <div class="row g-3">
+    <div class="col-6 col-lg-3">
+      <a class="resumo-item {% if resumo.nivel_baixo %}perigo{% else %}ok{% endif %}" href="{% url 'impressoras' %}#baixos">
+        <i class="bi {% if resumo.nivel_baixo %}bi-droplet-half{% else %}bi-check-circle-fill{% endif %}"></i>
+        <span class="numero">{{ resumo.nivel_baixo }}</span>
+        <span class="rotulo">{% if resumo.nivel_baixo == 1 %}impressora com toner baixo{% else %}impressoras com toner baixo{% endif %}</span>
+      </a>
+    </div>
+    <div class="col-6 col-lg-3">
+      <a class="resumo-item {% if reabastecer %}atencao{% else %}ok{% endif %}" href="{% url 'estoque' %}#salas-reabastecer">
+        <i class="bi {% if reabastecer %}bi-door-open{% else %}bi-check-circle-fill{% endif %}"></i>
+        <span class="numero">{{ reabastecer|length }}</span>
+        <span class="rotulo">{% if reabastecer|length == 1 %}item sem reserva na sala{% else %}itens sem reserva nas salas{% endif %}</span>
+      </a>
+    </div>
+    <div class="col-6 col-lg-3">
+      <a class="resumo-item {% if alertas %}perigo{% else %}ok{% endif %}" href="{% url 'estoque' %}#o-que-pedir">
+        <i class="bi {% if alertas %}bi-cart-plus{% else %}bi-check-circle-fill{% endif %}"></i>
+        <span class="numero">{{ alertas|length }}</span>
+        <span class="rotulo">{% if alertas|length == 1 %}item para pedir{% else %}itens para pedir{% endif %}</span>
+      </a>
+    </div>
+    <div class="col-6 col-lg-3">
+      <a class="resumo-item {% if resumo.pedidos_abertos %}info{% else %}neutro{% endif %}" href="{% url 'pedidos' %}">
+        <i class="bi bi-truck"></i>
+        <span class="numero">{{ resumo.pedidos_abertos }}</span>
+        <span class="rotulo">{% if resumo.pedidos_abertos == 1 %}pedido a caminho{% else %}pedidos a caminho{% endif %}</span>
+      </a>
+    </div>
+  </div>
 </div>
-{% else %}
-<div class="resumo-geral ok mb-4" role="status">
-  <i class="bi bi-check-circle-fill"></i> Tudo certo: nenhum toner baixo, nenhuma sala sem reserva e nada para pedir.
-</div>
-{% endif %}
-

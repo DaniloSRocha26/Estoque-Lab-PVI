@@ -8,34 +8,43 @@
 
 {# ===== Estoque ===== #}
 <h2 class="mb-3"><i class="bi bi-box-seam"></i> Estoque da unidade</h2>
-<div class="row g-3 mb-5">
-  {% for c in consumiveis %}
-  <div class="col-md-6 col-xl-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="fs-6 fw-bold">{% if c.cor %}<span class="ponto cor-{{ c.cor }}" title="{{ c.cor_nome }}"></span> {% endif %}{{ c.nome }}</div>
-      <div class="mb-2">{{ c.get_tipo_display }} · ideal: pelo menos {{ c.estoque_minimo }}</div>
-      {% if pode_editar %}
-      <form class="d-flex gap-2 align-items-center flex-wrap" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
-        {% csrf_token %}
-        <label class="mb-0 fw-semibold">Em estoque:</label>
-        <input class="form-control campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Quantidade em estoque">
-        <input type="hidden" name="orig_estoque_unidade" value="{{ c.estoque_unidade }}">
-        <button class="btn btn-primary">Salvar</button>
-        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% endif %}
-      </form>
-      {% else %}
-      <div class="d-flex gap-2 align-items-center">
-        <span class="fs-5">Em estoque: <strong>{{ c.estoque_unidade }}</strong></span>
-        {% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}
-      </div>
-      {% endif %}
-      <div class="mt-2 text-body-secondary" title="{{ c.atualizado_em|date:'d/m/Y H:i' }}"><i class="bi bi-clock-history"></i> Atualizado {{ c.atualizado_em|naturaltime }}</div>
-    </div></div>
+{% if grupos_estoque %}
+<div class="card mb-5">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0 tabela-estoque">
+      <thead><tr><th>Item</th><th>Em estoque</th><th>Mínimo</th><th>Situação</th><th class="text-end">Atualizado</th></tr></thead>
+      {% for g in grupos_estoque %}
+      <tbody>
+        <tr class="grupo"><th colspan="5">{{ g.nome }}</th></tr>
+        {% for c in g.itens %}
+        <tr>
+          <td class="fw-semibold">{% if c.cor %}<span class="ponto cor-{{ c.cor }}" title="{{ c.cor_nome }}"></span> {% elif c.tipo == 'residuo' %}<i class="bi bi-trash3 icone-item" title="Caixa de resíduo"></i> {% endif %}{{ c.nome }}</td>
+          <td>
+            {% if pode_editar %}
+            <form class="d-flex gap-2 align-items-center" method="post" action="{% url 'atualizar_consumivel' c.id %}" data-ajax>
+              {% csrf_token %}
+              <input class="form-control campo-pequeno" type="number" name="estoque_unidade" min="0" value="{{ c.estoque_unidade }}" aria-label="Quantidade em estoque de {{ c.nome }}">
+              <input type="hidden" name="orig_estoque_unidade" value="{{ c.estoque_unidade }}">
+              <button class="btn btn-outline-primary btn-salvar">Salvar</button>
+            </form>
+            {% else %}
+            <strong class="fs-5">{{ c.estoque_unidade }}</strong>
+            {% endif %}
+          </td>
+          <td>{{ c.estoque_minimo }}</td>
+          <td>{% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}</td>
+          <td class="text-end text-body-secondary text-nowrap" title="{{ c.atualizado_em|date:'d/m/Y H:i' }}">Atualizado {{ c.atualizado_em|naturaltime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% endfor %}
+    </table>
   </div>
-  {% empty %}
-  <p class="fs-6">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
-  {% endfor %}
 </div>
+{% else %}
+<p class="fs-6 mb-5">Nenhum item cadastrado.{% if pode_editar %} Use o menu <a href="{% url 'cadastros' %}">Cadastros</a>.{% endif %}</p>
+{% endif %}
+
 {# ===== Salas para reabastecer ===== #}
 <div id="salas-reabastecer" class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
   <h2 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Salas para reabastecer</h2>
@@ -79,7 +88,7 @@
 
 {# ===== Alertas ===== #}
 {% if alertas %}
-<h2 class="mb-3"><i class="bi bi-cart-plus text-danger"></i> O que pedir</h2>
+<h2 class="mb-3" id="o-que-pedir"><i class="bi bi-cart-plus text-danger"></i> O que pedir</h2>
 <div class="row g-3 mb-5">
   {% for a in alertas %}
   <div class="col-lg-6">

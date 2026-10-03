@@ -141,7 +141,7 @@ class AbasTests(TestCase):
         r = self.client.get('/impressoras/')
         self.assertEqual([g['modelo'].nome for g in r.context['grupos']], ['Epson', 'Konica'])
         self.assertContains(r, 'data-aba=', count=3)  # Todos + 2 modelos
-        self.assertContains(r, 'card-impressora h-100', count=4)  # cada impressora em Todos e na sua aba
+        self.assertContains(r, 'class="card card-impressora"', count=4)  # cada impressora em Todos e na sua aba
 
 
 class CadastrosTests(TestCase):

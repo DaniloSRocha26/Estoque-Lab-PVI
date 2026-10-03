@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 
 from .acesso import somente_admin
 from .models import (CORES, ORDEM_CORES, AjusteEstoque, AjusteReserva, Consumivel, Impressora,
-                     ModeloToner, NivelToner, Pedido, Reposicao, Troca)
+                     ModeloImpressora, ModeloToner, NivelToner, Pedido, Reposicao, Troca)
 from .niveis import NIVEL_BAIXO
 from .services import (STATUS_EM_ANDAMENTO, SemEstoque, SemReserva, ValorMudou, ajustar_estoque,
                        atualizar_contagem, calcular_alertas, impressoras_com_niveis,
@@ -57,8 +57,28 @@ def _contexto_base():
     }
 
 
+def _estoque_por_modelo(consumiveis):
+    """Itens do estoque agrupados pelo modelo que os usa: toners na ordem das cores, depois a caixa."""
+    por_id = {c.id: c for c in consumiveis}
+    usados, grupos = set(), []
+    modelos = (ModeloImpressora.objects.select_related('caixa_residuo')
+               .prefetch_related('toners').order_by('nome'))
+    for modelo in modelos:
+        ids = [t.consumivel_id for t in modelo.toners_ordenados()] + [modelo.caixa_residuo_id]
+        itens = [por_id[i] for i in ids if i in por_id and i not in usados]
+        usados.update(ids)
+        if itens:
+            grupos.append({'nome': modelo.nome, 'itens': itens})
+    outros = [c for c in consumiveis if c.id not in usados]
+    if outros:
+        grupos.append({'nome': 'Outros itens', 'itens': outros})
+    return grupos
+
+
 def pagina_estoque(request):
-    return render(request, 'estoque/estoque.html', _contexto_base())
+    contexto = _contexto_base()
+    contexto['grupos_estoque'] = _estoque_por_modelo(contexto['consumiveis'])
+    return render(request, 'estoque/estoque.html', contexto)
 
 
 def pagina_impressoras(request):

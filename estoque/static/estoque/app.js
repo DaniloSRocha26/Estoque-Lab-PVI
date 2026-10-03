@@ -6,7 +6,8 @@
   var NIVEL_MEDIO = parseInt(document.body.dataset.nivelMedio, 10);
   var INTERVALO_AUTO = 60 * 1000;   // atualização automática: a cada 1 minuto
   var PAUSA_APOS_DIGITAR = 30 * 1000; // não atualiza se você mexeu em algum campo há menos que isso
-  var filtros = { busca: '', baixos: false, aba: null };
+  // o resumo do topo leva para /impressoras/#baixos já com o filtro "Só toner baixo" ligado
+  var filtros = { busca: '', baixos: location.hash === '#baixos', aba: null };
 
   // ----- Tema claro/escuro -----
   document.getElementById('alternar-tema').addEventListener('click', function () {
@@ -96,8 +97,6 @@
       var linha = e.target.closest('.linha-cor');
       var valor = parseInt(e.target.value, 10);
       linha.querySelector('[data-nivel-saida]').textContent = valor + '%';
-      linha.querySelector('.progress-bar').style.width = valor + '%';
-      linha.querySelector('.progress').setAttribute('aria-valuenow', valor);
       e.target.style.setProperty('--valor', valor + '%');  // pinta a parte já "preenchida" da trilha
       var estado = linha.querySelector('[data-nivel-estado]');
       var nivel = valor <= NIVEL_BAIXO ? ['Baixo', 'danger'] : valor <= NIVEL_MEDIO ? ['Médio', 'warning'] : ['Bom', 'success'];
