@@ -116,10 +116,13 @@ python manage.py runserver
 - [ ] Tornar os **limites configuráveis pela tela** (hoje 25%, 55% e reserva 1 ficam no código).
 
 ### 5.4 Verificações recomendadas
-- [ ] **Conferir a interface no navegador e no celular.** Os 102 testes automáticos cobrem o servidor (regras, permissões e páginas), mas **não cobrem o JavaScript** (atualização automática, controle deslizante ao vivo, menus). Esses pontos foram escritos, mas não foram testados em um navegador real.
+- [x] **Interface conferida no navegador (computador, tema claro e escuro)** em 03/10/2026, com prints e cliques automáticos no Edge. Os 105 testes automáticos cobrem o servidor; o JavaScript foi conferido no navegador.
+- **Celular: decidido não adaptar por enquanto** (03/10/2026). No celular, o menu do topo sai da largura da tela.
 - [ ] A interface carrega Bootstrap e ícones por **CDN**: precisa de internet. Se a unidade tiver rede restrita, trazer esses arquivos para dentro do projeto.
 
 ---
+
+> **Descartadas em 03/10/2026:** previsão de quando o toner acaba, botão "Pedir tudo", exportar/automatizar o pedido no Office Total (os pedidos são feitos lá, todos de uma vez) e lista para imprimir na sexta.
 
 ## 6. Ideias para o futuro (Fase 4 e além)
 
@@ -141,7 +144,7 @@ python manage.py runserver
 ## 7. Informações técnicas
 
 - **Stack:** Python 3.14, Django 6.1, SQLite (desenvolvimento), Bootstrap 5 e JavaScript puro.
-- **Testes:** `python manage.py test` (102 testes).
+- **Testes:** `python manage.py test` (105 testes).
 - **Estrutura principal**
   - `estoque/models.py`: dados (Consumivel, ModeloImpressora, ModeloToner, Impressora, NivelToner, Pedido, Troca, Reposicao, AjusteReserva, AjusteEstoque)
   - `estoque/services.py`: regras (alertas, reposição, troca, pedidos)
