@@ -47,10 +47,24 @@ class AlertaETests(TestCase):
         self.assertEqual(alertas[0]['quantidade_sugerida'], 4)
         self.assertFalse(alertas[0]['em_andamento'])
 
-    def test_sem_alerta_se_ha_reserva_na_sala(self):
+    def test_alerta_mesmo_com_reserva_se_o_estoque_esta_abaixo_do_minimo(self):
         self.nivel.na_sala = 1
         self.nivel.save()
+        alertas = calcular_alertas()
+        self.assertEqual(len(alertas), 1)
+        self.assertEqual(alertas[0]['afetadas'], [])
+        self.assertEqual(alertas[0]['quantidade_sugerida'], 3)  # só o mínimo: as salas estão cheias
+
+    def test_sem_alerta_com_estoque_no_minimo_e_salas_com_reserva(self):
+        self.nivel.na_sala = 1
+        self.nivel.save()
+        Consumivel.objects.filter(pk=self.toner.pk).update(estoque_unidade=3)
         self.assertEqual(calcular_alertas(), [])
+
+    def test_alerta_quando_o_estoque_nao_da_para_repor_as_salas(self):
+        Consumivel.objects.filter(pk=self.toner.pk).update(estoque_minimo=0)  # sem mínimo definido
+        alertas = calcular_alertas()
+        self.assertEqual([a['quantidade_sugerida'] for a in alertas], [1])
 
     def test_pedido_em_andamento(self):
         Pedido.objects.create(consumivel=self.toner, quantidade=3, solicitante='Ana')

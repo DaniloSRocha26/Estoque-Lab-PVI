@@ -102,8 +102,8 @@
           <div class="fs-6 fw-semibold mb-2">{{ a.consumivel.nome }}</div>
         {% endif %}
         <div class="mb-2">
-          Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }} depois de repor as salas).<br>
-          Sem reserva na sala: {{ a.afetadas|join:", " }}
+          Em estoque: <strong>{{ a.consumivel.estoque_unidade }}</strong> (o ideal é ter pelo menos {{ a.consumivel.estoque_minimo }}{% if a.falta_nas_salas %} depois de repor as salas{% endif %}).<br>
+          {% if a.afetadas %}Sem reserva na sala: {{ a.afetadas|join:", " }}{% else %}As salas ainda têm reserva.{% endif %}
           {% if a.em_andamento and not a.pedido_cobre %}<br><i class="bi bi-truck"></i> Já pedido e ainda não chegou: {{ a.ja_pedido }} (não é suficiente).{% endif %}
         </div>
         {% if pode_editar and not a.pedido_cobre %}

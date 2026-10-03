@@ -35,7 +35,7 @@ def impressoras_com_niveis():
 
 
 def calcular_alertas(impressoras=None):
-    """Itens com estoque abaixo do mínimo e ao menos uma impressora sem reserva na sala.
+    """Itens para pedir: estoque abaixo do mínimo ("Pouco") ou que não dá para repor as salas.
 
     A quantidade sugerida cobre a reposição das salas e ainda deixa o mínimo no estoque,
     descontando o que já foi pedido e ainda não chegou."""
@@ -62,13 +62,17 @@ def calcular_alertas(impressoras=None):
 
     alertas = []
     for item in Consumivel.objects.order_by('tipo', 'nome'):
-        if item.estoque_unidade >= item.estoque_minimo or not sem_reserva[item.id]:
+        falta = falta_nas_salas[item.id]
+        pouco = item.estoque_unidade < item.estoque_minimo
+        nao_cobre_as_salas = falta > item.estoque_unidade
+        if not pouco and not nao_cobre_as_salas:
             continue
-        necessario = item.estoque_minimo + falta_nas_salas[item.id] - item.estoque_unidade
+        necessario = item.estoque_minimo + falta - item.estoque_unidade
         pedido = ja_pedido.get(item.id, 0)
         alertas.append({
             'consumivel': item,
             'afetadas': sem_reserva[item.id],
+            'falta_nas_salas': falta,
             'quantidade_sugerida': max(necessario - pedido, 1),
             'ja_pedido': pedido,
             'em_andamento': pedido > 0,
