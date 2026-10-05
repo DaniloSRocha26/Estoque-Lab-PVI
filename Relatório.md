@@ -1,7 +1,7 @@
 # Relatório do projeto: Controle de Toner
 
 Situação do projeto, regras de negócio adotadas, o que falta e ideias para o futuro.
-O planejamento original está em [project-1.md](project-1.md).
+O planejamento original está em [project-1.md](project-1.md). Para rodar o projeto em outro computador, fazer alterações ou mudar de servidor, veja o [README.md](README.md); para o site no ar, o [DEPLOY.md](DEPLOY.md).
 
 Última atualização deste relatório: 05/10/2026.
 
