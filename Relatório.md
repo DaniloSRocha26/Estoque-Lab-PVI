@@ -3,7 +3,7 @@
 Situação do projeto, regras de negócio adotadas, o que falta e ideias para o futuro.
 O planejamento original está em [project-1.md](project-1.md).
 
-Última atualização deste relatório: 03/10/2026.
+Última atualização deste relatório: 05/10/2026.
 
 ---
 
@@ -13,10 +13,10 @@ Sistema web (Python + Django) para acompanhar o nível de toner das impressoras 
 
 - **Fase 1 (MVP): concluída.**
 - **Fase 2 (perfis de acesso): concluída**, com uma decisão diferente do planejado (ver seção 4).
-- **Fase 3 (deploy): não iniciada.**
+- **Fase 3 (deploy): concluída em 05/10/2026.**
 - **Fase 4 (melhorias): parcialmente feita** (histórico de trocas e "atualizado em" já existem; faltam previsão de consumo e e-mail).
 
-O sistema ainda **não está no ar**: roda apenas no computador de desenvolvimento, com SQLite.
+O sistema está **no ar** desde 05/10/2026, em `https://Danilo26.pythonanywhere.com` (PythonAnywhere, plano gratuito, banco SQLite no servidor). O banco de produção começou **vazio**: faltam cadastrar os dados reais (seção 5.2).
 
 ---
 
@@ -44,7 +44,7 @@ O sistema ainda **não está no ar**: roda apenas no computador de desenvolvimen
 - **Duas pessoas editando ao mesmo tempo:** o card só grava os números que a pessoa mudou. Se outra pessoa mudou o **mesmo** número nesse meio-tempo, o sistema recusa e pede para conferir, em vez de apagar a mudança do outro.
 - **"Atualizado há…":** em cada impressora e item de estoque. Impressora sem conferência há mais de 7 dias aparece em vermelho ("confira os níveis").
 - **Atualização automática:** a página recarrega os dados a cada minuto, mas **não atualiza** se houver campo alterado e não salvo, se a pessoa estiver digitando há menos de 30 segundos, se um menu estiver aberto ou se a aba estiver em segundo plano.
-- **Visual:** Bootstrap, letras e botões grandes, estado sempre escrito em palavras (Baixo, Médio, Bom), tema claro por padrão com botão para o escuro, edição sem recarregar a página.
+- **Visual (redesenhado em 05/10/2026):** menu lateral azul-marinho agrupado em Operação e Gestão, com o usuário e o botão Sair no rodapé; título e subtítulo em cada página; cartões arredondados, tabelas e abas em formato de pílula. Estado sempre escrito em palavras (Baixo, Médio, Bom). Tema claro por padrão, com botão no menu para o escuro (azul-marinho). Edição sem recarregar a página. Os estilos ficam em `app.css` (base) e `tema.css` (menu, cores e formas).
 
 ---
 
@@ -96,14 +96,24 @@ python manage.py runserver
 ### 5.1 Deploy (Fase 3)
 O passo a passo está em [DEPLOY.md](DEPLOY.md).
 - [x] Hospedagem escolhida (03/10/2026): **PythonAnywhere, plano gratuito**, na internet. O Render foi descartado porque o banco gratuito expira em 30 dias e o disco é apagado a cada atualização.
+- **Outras hospedagens avaliadas em 05/10/2026 (conferido nas páginas oficiais; confira de novo antes de decidir, porque mudam):**
+  - **Vercel:** não serve. O sistema de arquivos é somente leitura, então o SQLite não grava, e o plano gratuito é restrito a uso não comercial.
+  - **Render e Koyeb (planos gratuitos):** o site dorme depois de um tempo sem acesso, o disco é apagado e o banco gratuito é limitado.
+  - **Fly.io:** sem plano gratuito permanente.
+  - **Oracle Cloud "Always Free":** gratuito de verdade e sem prazo, mas exige cartão de crédito e administrar um servidor Linux.
+  - **PythonAnywhere pago:** remove a renovação mensal e permite tarefas agendadas (backup automático), mantendo o mesmo guia.
 - [x] Banco: **SQLite** no disco do servidor (no PythonAnywhere ele não se perde). PostgreSQL não é necessário.
 - [x] Configuração por `.env` no servidor, criado por `python manage.py preparar_producao --host ...` com chave secreta nova e `DEBUG` desligado.
 - [x] Produção: cookies seguros, HSTS, `CSRF_TRUSTED_ORIGINS`, `STATIC_ROOT` e erros no log. O `manage.py check --deploy` passa sem avisos.
 - [x] Backup: `python manage.py backup_banco` (manual, porque o plano gratuito não tem tarefas agendadas) e baixar o arquivo.
 - [x] Decidido (03/10/2026): o banco de produção **começa vazio**.
 - [x] Decidido (03/10/2026): **sem** limite de tentativas de login e **sem** identidade visual própria.
-- [ ] **Fazer o deploy** seguindo o DEPLOY.md.
-- [ ] Todo mês: clicar em "Run until 1 month from today" na aba Web, ou o site para.
+- [x] **Deploy feito em 05/10/2026** em `https://Danilo26.pythonanywhere.com`, seguindo o DEPLOY.md.
+- [x] O endereço é fixo: no plano gratuito ele é sempre `usuario.pythonanywhere.com`, e o nome de usuário **não pode ser mudado** (só criando outra conta, ou com plano pago). Decidido (05/10/2026): manter este endereço, porque só uma pessoa vai usar por enquanto.
+- [ ] **Renovar todo mês:** clicar em "Run until 1 month from today" na aba Web. O site atual será desativado em **05/11/2026** se não for renovado; lembrete sugerido para **29/10/2026**. Se esquecer, nada é apagado: basta entrar e clicar no botão.
+- [ ] **Backup toda sexta:** `python manage.py backup_banco` e baixar o arquivo (aba Files, pasta `Estoque-Lab-PVI/backups/`).
+- [ ] **Trocar a senha da conta admin por uma senha forte** (Cadastros → Usuários, campo "Nova senha"). O site é público na internet e não limita tentativas de login.
+- **Para atualizar o site depois de mudanças no GitHub:** backup, `git pull`, `migrate`, `collectstatic` e **Reload** (detalhes no DEPLOY.md, passo 11).
 
 ### 5.2 Dados reais
 - [ ] Cadastrar as impressoras reais, os modelos, os toners e as caixas de resíduo.
@@ -117,7 +127,8 @@ O passo a passo está em [DEPLOY.md](DEPLOY.md).
 
 ### 5.4 Verificações recomendadas
 - [x] **Interface conferida no navegador (computador, tema claro e escuro)** em 03/10/2026, com prints e cliques automáticos no Edge. Os 109 testes automáticos cobrem o servidor; o JavaScript foi conferido no navegador.
-- **Celular: decidido não adaptar por enquanto** (03/10/2026). No celular, o menu do topo sai da largura da tela.
+- [x] **Novo visual conferido no navegador** em 05/10/2026 (Edge, como visitante, tema claro e escuro, páginas Estoque e Impressoras). A tela de edição como admin e as outras páginas (Pedidos, Histórico, Cadastros) **não foram conferidas visualmente** depois da mudança; vale dar uma olhada.
+- **Celular: decidido não adaptar por enquanto** (03/10/2026). Com o novo visual, em telas estreitas o menu lateral vira uma faixa no topo, mas não foi testado no celular.
 - [ ] A interface carrega Bootstrap e ícones por **CDN**: precisa de internet. Se a unidade tiver rede restrita, trazer esses arquivos para dentro do projeto.
 
 ---
@@ -138,12 +149,13 @@ O passo a passo está em [DEPLOY.md](DEPLOY.md).
 | **Unir barra e controle deslizante** em um só elemento | Deixaria o card ainda menor |
 | **Observação por troca** (ex.: "papel enroscou") | |
 | **Registro de fotos ou etiquetas** das impressoras | Só se for útil na prática |
+| **Endereço melhor** para o site (domínio próprio ou subdomínio personalizado) | Exige o plano pago do PythonAnywhere, ou criar uma conta nova com outro nome |
 
 ---
 
 ## 7. Informações técnicas
 
-- **Stack:** Python 3.14, Django 6.1, SQLite (desenvolvimento), Bootstrap 5 e JavaScript puro.
+- **Stack:** Python (3.14 no desenvolvimento, 3.13 no servidor), Django 6.1, SQLite (desenvolvimento e produção), Bootstrap 5 e JavaScript puro.
 - **Testes:** `python manage.py test` (109 testes).
 - **Estrutura principal**
   - `estoque/models.py`: dados (Consumivel, ModeloImpressora, ModeloToner, Impressora, NivelToner, Pedido, Troca, Reposicao, AjusteReserva, AjusteEstoque)
