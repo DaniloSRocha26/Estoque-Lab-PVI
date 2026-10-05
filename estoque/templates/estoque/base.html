@@ -9,52 +9,73 @@
     (function () {
       var salvo = null;
       try { salvo = localStorage.getItem('tema'); } catch (e) {}
-      var tema = salvo || 'light'; // claro por padrão (mais legível); o botão do topo troca
+      var tema = salvo || 'light'; // claro por padrão (mais legível); o botão do menu troca
       document.documentElement.setAttribute('data-bs-theme', tema);
     })();
   </script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
   <link href="{% static 'estoque/app.css' %}" rel="stylesheet">
+  <link href="{% static 'estoque/tema.css' %}" rel="stylesheet">
 </head>
-<body class="bg-body-tertiary" data-nivel-baixo="{{ NIVEL_BAIXO }}" data-nivel-medio="{{ NIVEL_MEDIO }}">
-  <nav class="navbar navbar-expand bg-body border-bottom sticky-top">
-    <div class="container">
-      <a class="navbar-brand fw-semibold" href="{% url 'estoque' %}">
-        <i class="bi bi-printer-fill text-primary"></i> Controle de Toner
-      </a>
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'estoque' %}active{% endif %}" href="{% url 'estoque' %}">Estoque</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'impressoras' %}active{% endif %}" href="{% url 'impressoras' %}">Impressoras</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'pedidos' %}active{% endif %}" href="{% url 'pedidos' %}">Pedidos</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'historico' %}active{% endif %}" href="{% url 'historico' %}">Histórico</a></li>
-        {% if pode_editar %}
-        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'cadastros' %}active{% endif %}" href="{% url 'cadastros' %}">Cadastros</a></li>
-        {% endif %}
-      </ul>
-      {% if user.is_authenticated %}
-      <span class="small text-body-secondary me-2 d-none d-md-inline">
-        {{ user.get_full_name|default:user.username }} · {% if pode_editar %}Admin{% else %}Somente consulta{% endif %}
-      </span>
-      <form method="post" action="{% url 'logout' %}" class="me-2">{% csrf_token %}
-        <button class="btn btn-outline-secondary btn-sm" title="Sair"><i class="bi bi-box-arrow-right"></i> Sair</button>
-      </form>
-      {% else %}
-      <span class="small text-body-secondary me-2 d-none d-md-inline">Somente consulta</span>
-      {% if request.resolver_match.url_name != 'login' %}
-      <a class="btn btn-primary btn-sm me-2" href="{% url 'login' %}?next={{ request.path|urlencode }}"><i class="bi bi-pencil-square"></i> Entrar para editar</a>
-      {% endif %}
-      {% endif %}
-      <button id="alternar-tema" class="btn btn-outline-secondary btn-sm" type="button" title="Alternar tema">
-        <i class="bi bi-circle-half"></i>
-      </button>
-    </div>
-  </nav>
+<body data-nivel-baixo="{{ NIVEL_BAIXO }}" data-nivel-medio="{{ NIVEL_MEDIO }}">
+  <div class="app">
 
-  <main class="container py-4" id="conteudo" data-auto="{% block auto %}{% endblock %}">
-    {% for m in messages %}<div class="d-none" data-mensagem="{{ m.tags }}">{{ m }}</div>{% endfor %}
-    {% block conteudo %}{% endblock %}
-  </main>
+    <aside class="sidebar">
+      <a class="marca" href="{% url 'estoque' %}">
+        <span class="marca-icone"><i class="bi bi-printer-fill"></i></span>
+        <span class="marca-texto"><strong>Controle de Toner</strong><small>Impressoras e estoque</small></span>
+      </a>
+
+      <nav class="menu" aria-label="Menu principal">
+        <div class="menu-secao">Operação</div>
+        <a class="menu-item {% if request.resolver_match.url_name == 'estoque' %}ativo{% endif %}" href="{% url 'estoque' %}"><i class="bi bi-box-seam"></i> Estoque</a>
+        <a class="menu-item {% if request.resolver_match.url_name == 'impressoras' %}ativo{% endif %}" href="{% url 'impressoras' %}"><i class="bi bi-printer"></i> Impressoras</a>
+        <a class="menu-item {% if request.resolver_match.url_name == 'pedidos' %}ativo{% endif %}" href="{% url 'pedidos' %}"><i class="bi bi-truck"></i> Pedidos</a>
+        <a class="menu-item {% if request.resolver_match.url_name == 'historico' %}ativo{% endif %}" href="{% url 'historico' %}"><i class="bi bi-clock-history"></i> Histórico</a>
+        {% if pode_editar %}
+        <div class="menu-secao">Gestão</div>
+        <a class="menu-item {% if request.resolver_match.url_name == 'cadastros' %}ativo{% endif %}" href="{% url 'cadastros' %}"><i class="bi bi-sliders"></i> Cadastros</a>
+        {% endif %}
+      </nav>
+
+      <div class="menu-rodape">
+        {% if user.is_authenticated %}
+        <div class="usuario">
+          <span class="avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
+          <span class="usuario-texto"><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if pode_editar %}Administrador{% else %}Somente consulta{% endif %}</small></span>
+        </div>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+          <button class="btn btn-lateral w-100"><i class="bi bi-box-arrow-right"></i> Sair</button>
+        </form>
+        {% else %}
+        <div class="usuario">
+          <span class="avatar"><i class="bi bi-eye"></i></span>
+          <span class="usuario-texto"><strong>Visitante</strong><small>Somente consulta</small></span>
+        </div>
+        {% if request.resolver_match.url_name != 'login' %}
+        <a class="btn btn-primary w-100" href="{% url 'login' %}?next={{ request.path|urlencode }}"><i class="bi bi-pencil-square"></i> Entrar para editar</a>
+        {% endif %}
+        {% endif %}
+        <button id="alternar-tema" class="btn btn-lateral w-100" type="button" title="Alternar entre tema claro e escuro">
+          <i class="bi bi-circle-half"></i> Tema claro/escuro
+        </button>
+      </div>
+    </aside>
+
+    <div class="area">
+      <header class="topo">
+        <h1>{% block pagina_titulo %}{% endblock %}</h1>
+        <p>{% block pagina_sub %}{% endblock %}</p>
+      </header>
+
+      <main id="conteudo" data-auto="{% block auto %}{% endblock %}">
+        {% for m in messages %}<div class="d-none" data-mensagem="{{ m.tags }}">{{ m }}</div>{% endfor %}
+        {% block conteudo %}{% endblock %}
+      </main>
+    </div>
+
+  </div>
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
 

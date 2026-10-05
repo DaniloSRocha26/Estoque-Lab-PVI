@@ -1,0 +1,148 @@
+/* =====================================================================================
+   TEMA: menu lateral azul-marinho, cartões arredondados e cabeçalho por página.
+   Vem depois do app.css e sobrescreve só o visual (cores, formas, estrutura).
+   ===================================================================================== */
+:root, [data-bs-theme="light"] {
+  --app-bg: #f1f5fb;
+  --superficie: #ffffff;
+  --borda: #dde6f3;
+  --acento: #2563eb;
+  --acento-forte: #1d4ed8;
+  --sombra: 0 1px 2px rgba(15, 26, 47, .06), 0 10px 28px rgba(15, 26, 47, .05);
+  --bs-body-bg: #f1f5fb;
+  --bs-tertiary-bg: #e8eff9;
+  --bs-secondary-bg: #e3ebf7;
+  --bs-border-color: #dde6f3;
+  --bs-primary: #2563eb;
+  --bs-primary-rgb: 37, 99, 235;
+  --bs-link-color: #1d4ed8;
+}
+[data-bs-theme="dark"] {
+  --app-bg: #0b1324;
+  --superficie: #111c33;
+  --borda: #22324f;
+  --acento: #3b82f6;
+  --acento-forte: #2563eb;
+  --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .28);
+  --bs-body-bg: #0b1324;
+  --bs-body-color: #e6edf7;
+  --bs-tertiary-bg: #0f192e;
+  --bs-secondary-bg: #16233f;
+  --bs-border-color: #22324f;
+  --bs-secondary-color: rgba(230, 237, 247, .72);
+  --bs-primary: #3b82f6;
+  --bs-primary-rgb: 59, 130, 246;
+  --bs-link-color: #7db1ff;
+}
+
+body {
+  background: var(--app-bg);
+  background-image: radial-gradient(900px 420px at 85% -80px, rgba(59, 130, 246, .10), transparent 70%);
+  background-attachment: fixed;
+}
+[data-bs-theme="dark"] body {
+  background-image: radial-gradient(1100px 520px at 85% -120px, rgba(59, 130, 246, .20), transparent 70%);
+}
+
+/* ---------- Estrutura: menu lateral + área de conteúdo ---------- */
+.app { display: flex; min-height: 100vh; }
+.area { flex: 1; min-width: 0; }
+.topo { padding: 1.6rem 2rem .4rem; }
+.topo h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -.015em; margin: 0; }
+.topo h1:empty, .topo p:empty { display: none; }
+.topo p { margin: .2rem 0 0; color: var(--bs-secondary-color); }
+main#conteudo { padding: 1rem 2rem 2.5rem; max-width: 1480px; }
+
+.sidebar {
+  flex: 0 0 252px; width: 252px; height: 100vh; position: sticky; top: 0;
+  display: flex; flex-direction: column; padding: 1.2rem .95rem;
+  background: linear-gradient(185deg, #12203b 0%, #0b1324 100%);
+  border-right: 1px solid rgba(255, 255, 255, .06);
+  color: #aebbd3; overflow-y: auto;
+}
+.marca { display: flex; align-items: center; gap: .75rem; padding: .2rem .5rem 1rem; text-decoration: none; color: #fff; }
+.marca-icone {
+  width: 2.6rem; height: 2.6rem; border-radius: .8rem; display: grid; place-items: center; font-size: 1.35rem;
+  background: linear-gradient(145deg, #3b82f6, #1d4ed8); box-shadow: 0 6px 16px rgba(37, 99, 235, .45);
+}
+.marca-texto { display: flex; flex-direction: column; line-height: 1.15; }
+.marca-texto strong { font-size: 1.05rem; }
+.marca-texto small { color: #7f93b8; font-size: .8rem; }
+
+.menu { display: flex; flex-direction: column; gap: .2rem; }
+.menu-secao { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #6c80a6; margin: 1.1rem .7rem .35rem; font-weight: 700; }
+.menu-item {
+  display: flex; align-items: center; gap: .75rem; padding: .7rem .85rem; border-radius: .75rem;
+  color: #b4c1d9; text-decoration: none; font-weight: 600; font-size: 1.02rem; transition: background .15s, color .15s;
+}
+.menu-item .bi { font-size: 1.15rem; width: 1.3rem; text-align: center; }
+.menu-item:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.menu-item.ativo { background: rgba(59, 130, 246, .20); color: #fff; box-shadow: inset 3px 0 0 #3b82f6; }
+
+.menu-rodape { margin-top: auto; display: grid; gap: .6rem; padding-top: 1.2rem; }
+.usuario { display: flex; align-items: center; gap: .7rem; padding: .6rem .7rem; border-radius: .8rem; background: rgba(255, 255, 255, .06); }
+.avatar {
+  width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font-weight: 800; color: #fff; background: linear-gradient(145deg, #3b82f6, #6366f1);
+}
+.usuario-texto { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.usuario-texto strong { color: #fff; font-size: .98rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usuario-texto small { color: #8ea1c4; font-size: .82rem; }
+.btn-lateral { background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); color: #cdd8ec; }
+.btn-lateral:hover { background: rgba(255, 255, 255, .13); color: #fff; border-color: rgba(255, 255, 255, .22); }
+
+/* ---------- Cartões, botões, abas, tabelas ---------- */
+.card { background: var(--superficie); border: 1px solid var(--borda); border-radius: 1rem; box-shadow: var(--sombra); }
+.card-impressora { transition: box-shadow .2s, transform .2s; }
+.card-impressora:hover { transform: translateY(-2px); }
+h2, .h5 { letter-spacing: -.01em; }
+
+.btn { border-radius: .65rem; }
+.btn-primary {
+  --bs-btn-bg: var(--acento); --bs-btn-border-color: var(--acento);
+  --bs-btn-hover-bg: var(--acento-forte); --bs-btn-hover-border-color: var(--acento-forte);
+  --bs-btn-active-bg: #1e40af; --bs-btn-active-border-color: #1e40af;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, .25);
+}
+.form-control, .form-select { border-radius: .65rem; border-width: 1px; border-color: var(--borda); background-color: var(--bs-body-bg); }
+.form-control:focus, .form-select:focus { border-color: var(--acento); box-shadow: 0 0 0 .2rem rgba(59, 130, 246, .25); }
+
+.nav-pills .nav-link { border: 1px solid var(--borda); border-radius: 999px; background: var(--superficie); color: var(--bs-body-color); }
+.nav-pills .nav-link:hover { border-color: var(--acento); }
+.nav-pills .nav-link.active { background: var(--acento); border-color: var(--acento); color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, .3); }
+.nav-pills .nav-link.active .badge { background: rgba(255, 255, 255, .25) !important; color: #fff !important; }
+
+.table { --bs-table-bg: transparent; --bs-table-hover-bg: rgba(59, 130, 246, .07); --bs-table-border-color: var(--borda); }
+.table thead th { font-size: .76rem; letter-spacing: .07em; text-transform: uppercase; color: var(--bs-secondary-color); font-weight: 700; border-bottom-width: 1px; }
+.tabela-estoque .grupo th { background: var(--bs-tertiary-bg); text-transform: none; letter-spacing: 0; font-size: 1rem; color: var(--bs-body-color); }
+.card > .table-responsive > .table { margin-bottom: 0; }
+.card > .table-responsive { border-radius: 1rem; overflow: hidden; }
+
+.progress { --bs-progress-bg: var(--bs-secondary-bg); }
+.badge { border-radius: .55rem; }
+.toast { border-radius: .8rem; box-shadow: var(--sombra); }
+
+/* ---------- Resumo do topo ---------- */
+.resumo-item { border-width: 1px; border-radius: 1rem; background: var(--superficie); box-shadow: var(--sombra); }
+.resumo-item .numero { font-size: 2.2rem; }
+.resumo-item.perigo { background: var(--superficie); border-color: var(--bs-danger-border-subtle); box-shadow: var(--sombra), inset 5px 0 0 var(--bs-danger); }
+.resumo-item.atencao { background: var(--superficie); border-color: var(--bs-warning-border-subtle); box-shadow: var(--sombra), inset 5px 0 0 var(--bs-warning); }
+.resumo-item.info { background: var(--superficie); border-color: var(--bs-info-border-subtle); box-shadow: var(--sombra), inset 5px 0 0 var(--bs-info); }
+.resumo-item.ok { box-shadow: var(--sombra), inset 5px 0 0 var(--bs-success); }
+.resumo-item.neutro { box-shadow: var(--sombra), inset 5px 0 0 var(--bs-secondary-bg); }
+.resumo-item:hover { transform: translateY(-2px); }
+
+[id] { scroll-margin-top: 1rem; }
+
+/* ---------- Telas estreitas: o menu vira uma faixa no topo (o celular não é o foco) ---------- */
+@media (max-width: 991.98px) {
+  .app { flex-direction: column; }
+  .sidebar { position: static; flex: none; width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .7rem 1rem; }
+  .marca { padding: 0 .5rem 0 0; }
+  .marca-texto small, .menu-secao, .usuario-texto small { display: none; }
+  .menu { flex-direction: row; flex-wrap: wrap; }
+  .menu-rodape { margin: 0 0 0 auto; padding: 0; display: flex; align-items: center; }
+  .menu-rodape .btn { width: auto !important; }
+  .topo { padding: 1.2rem 1rem .2rem; }
+  main#conteudo { padding: .8rem 1rem 2rem; }
+}

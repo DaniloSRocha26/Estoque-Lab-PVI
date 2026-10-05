@@ -1,13 +1,14 @@
 {% extends "estoque/base.html" %}
 {% block titulo %}Impressoras · Controle de Toner{% endblock %}
 {% block auto %}1{% endblock %}
+{% block pagina_titulo %}Impressoras{% endblock %}
+{% block pagina_sub %}Nível de toner e reserva de cada impressora{% endblock %}
 {% block conteudo %}
 
 {% include 'estoque/_resumo.html' %}
 
 {# ===== Impressoras ===== #}
-<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h2 class="mb-0"><i class="bi bi-printer"></i> Impressoras</h2>
+<div class="d-flex flex-wrap gap-3 justify-content-end align-items-center mb-3">
   <div class="d-flex flex-wrap gap-3 align-items-center">
     <div class="form-check form-switch mb-0 fs-6">
       <input class="form-check-input" type="checkbox" id="filtro-baixos">
