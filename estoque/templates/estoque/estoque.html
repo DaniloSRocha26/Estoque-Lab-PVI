@@ -34,7 +34,7 @@
             {% endif %}
           </td>
           <td>{{ c.estoque_minimo }}</td>
-          <td>{% if c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-danger">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}</td>
+          <td>{% if c.estoque_unidade == 0 %}<span class="badge text-bg-danger">Em falta</span>{% elif c.estoque_unidade < c.estoque_minimo %}<span class="badge text-bg-warning">Pouco</span>{% else %}<span class="badge text-bg-success">Bom</span>{% endif %}</td>
           <td class="text-end text-body-secondary text-nowrap" title="{{ c.atualizado_em|date:'d/m/Y H:i' }}">Atualizado {{ c.atualizado_em|naturaltime }}</td>
         </tr>
         {% endfor %}

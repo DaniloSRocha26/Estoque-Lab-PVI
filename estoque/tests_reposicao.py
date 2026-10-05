@@ -112,6 +112,25 @@ class SalasParaReabastecerTests(TestCase):
         self.assertEqual(self.client.post(f'/impressoras/{self.imp.id}/repor/roxo/').status_code, 404)
 
 
+class SituacaoDoEstoqueTests(TestCase):
+    """Estoque zerado = "Em falta" (vermelho); abaixo do mínimo = "Pouco" (amarelo); senão "Bom"."""
+
+    def test_tres_situacoes_com_as_cores_certas(self):
+        _toner('Item zerado', estoque=0, minimo=2)
+        _toner('Item baixo', estoque=1, minimo=2)
+        _toner('Item bom', estoque=5, minimo=2)
+        html = self.client.get('/').content.decode()
+        self.assertIn('text-bg-danger">Em falta</span>', html)
+        self.assertIn('text-bg-warning">Pouco</span>', html)
+        self.assertIn('text-bg-success">Bom</span>', html)
+        self.assertEqual(html.count('>Em falta</span>'), 1)
+        self.assertEqual(html.count('>Pouco</span>'), 1)
+
+    def test_sem_a_palavra_pouco_em_vermelho(self):
+        _toner('Item zerado', estoque=0, minimo=2)
+        self.assertNotIn('text-bg-danger">Pouco', self.client.get('/').content.decode())
+
+
 class TrocaComOrigemTests(NovasFuncoesBase):
     def test_troca_pegando_do_estoque_nao_mexe_na_reserva(self):
         self._definir(10, na_sala=1)

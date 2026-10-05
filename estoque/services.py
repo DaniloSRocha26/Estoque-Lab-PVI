@@ -35,7 +35,7 @@ def impressoras_com_niveis():
 
 
 def calcular_alertas(impressoras=None):
-    """Itens para pedir: estoque abaixo do mínimo ("Pouco") ou que não dá para repor as salas.
+    """Itens para pedir: estoque abaixo do mínimo ("Pouco" ou "Em falta") ou que não dá para repor as salas.
 
     A quantidade sugerida cobre a reposição das salas e ainda deixa o mínimo no estoque,
     descontando o que já foi pedido e ainda não chegou."""
